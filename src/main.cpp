@@ -23,6 +23,10 @@ float x_max = - std::numeric_limits<float>::infinity();
 float y_max = - std::numeric_limits<float>::infinity();
 float z_max = - std::numeric_limits<float>::infinity();
 
+
+
+
+
 void compute_grid_dimension(const std::vector<ProteinAtom>& atoms){
     
     for(const auto & atom : atoms){
@@ -36,7 +40,7 @@ void compute_grid_dimension(const std::vector<ProteinAtom>& atoms){
         if(atom.z < z_min) z_min = atom.z;
     }
 
-    // sposto di 0.25 perchè per ora ho il centro del voxel
+    // traslated to the corner of the cube
     x_max += cell_size * 0.5;
     x_min -= cell_size * 0.5;
 
@@ -52,7 +56,7 @@ void compute_grid_dimension(const std::vector<ProteinAtom>& atoms){
     Z = static_cast<int>((z_max - z_min) / cell_size);
 }
 
-// this function compute the key by using ah hash map
+// this function compute the key by using an hash map
 // the input is the cell's id = x_cell + y_cell*10 + z_cell*100
 int compute_global_index(const float& atom_x, const float& atom_y, const float& atom_z){
     
@@ -64,8 +68,17 @@ int compute_global_index(const float& atom_x, const float& atom_y, const float& 
     // global index of the cell
     int index = cell_x + cell_y * (X) + cell_z * (X * Y);
 
-   
     return index;
+}
+
+void init_grid(std::vector<ProteinAtom>& protein_atoms){
+    
+    compute_grid_dimension(protein_atoms);
+    // fill the map
+    for(auto& atom : protein_atoms){
+        int index = compute_global_index(atom.x, atom.y, atom.z);
+        grid_map[index] =  &atom;
+    }
 }
 
 std::vector<float> compute_affinity(const std::vector<MoleculeAtom> & molecule_atoms){
@@ -104,17 +117,14 @@ std::vector<float> compute_min_distance(const std::vector<ProteinAtom>& protein_
             if(dist < min_dist){
                 min_dist = dist;
                 id = protein.id;
-            }
-                 
+            }       
         }
 
         result.push_back(min_dist);
         result.push_back(id);
 
     }
-
     return result;
-
 }
 
 std::vector<float> min_distance_protein(const std::vector<ProteinAtom>& protein_atoms){
@@ -128,57 +138,25 @@ std::vector<float> min_distance_protein(const std::vector<ProteinAtom>& protein_
         for(const auto& protein : protein_atoms){
             if(protein.id != ligand.id){
                 dist = std::sqrt( std::pow((ligand.x - protein.x), 2) +  std::pow((ligand.y - protein.y), 2) + std::pow((ligand.z - protein.z), 2)  );
-            if(dist < pre_min_dist){
-                if(dist < min_dist){
-                    min_dist = dist;
-                } else{
-                    pre_min_dist = dist;
-                }
+                if(dist < pre_min_dist){
+                    if(dist < min_dist){
+                        min_dist = dist;
+                    } else{
+                        pre_min_dist = dist;
+                    }
 
-            }
-            }     
-                 
+                }
+            }             
         }
 
         result.push_back(min_dist);
         result.push_back(pre_min_dist);
 
     }
-
     return result;
-
 }
 
-
-
-int main() {
-    std::string filepath_protein = "../data/pocket.geneo.csv";
-    std::string filepath_molecule = "../data/6ugn_ligand.mol2.csv";
-    auto molecule_atoms = parse_ligand_file(filepath_molecule);
-    auto protein_atoms = parse_protein_file(filepath_protein);
-    std::vector<float> result;
-
-    /* for(const ProteinAtom& atom : protein_atoms){
-        std::cout << "Posizione: (" << atom.x << ", " << atom.y << ", " << atom.z << ")"
-        << " | Psi[0]: " << atom.psi[0] << std::endl;
-    }
-   
-    for(const MoleculeAtom& atom : molecule_atoms){
-        std::cout << "Posizione: (" << atom.x << ", " << atom.y << ", " << atom.z << ")"
-                  << " | Charge: " << atom.charge << std::endl;
-    } */
-
-    compute_grid_dimension(protein_atoms);
-    std::cout<<"X:"<<X<<"Y:"<<Y<<"Z:"<<Z<<std::endl;
-
-
-     for(auto& atom : protein_atoms){
-        int index = compute_global_index(atom.x, atom.y, atom.z);
-        grid_map[index] =  &atom;
-    }
-
-    result = compute_affinity(molecule_atoms);
-
+void print_result(const std::vector<MoleculeAtom> &molecule_atoms, const std::vector<float> &result){
     for(int i = 0; i<molecule_atoms.size();i++){
         int id = i + 1;
         int grid_index = compute_global_index(molecule_atoms[i].x,molecule_atoms[i].y,molecule_atoms[i].z);
@@ -190,16 +168,24 @@ int main() {
             }
         }
     }
+}
 
-     std::vector<float> min_distance;
-    min_distance = compute_min_distance(protein_atoms,molecule_atoms);
 
-    for(int i=0; i<min_distance.size();i=i+2){
-        std::cout<<"Id: "<<i/2+1<<", min distance: "<<min_distance[i]<<" ID Protein: "<<min_distance[i+1]<<std::endl;
-    }
 
-    
+int main() {
+    std::string filepath_protein = "../data/pocket.geneo.csv";
+    std::string filepath_molecule = "../data/6ugn_ligand.mol2.csv";
+    auto molecule_atoms = parse_ligand_file(filepath_molecule);
+    auto protein_atoms = parse_protein_file(filepath_protein);
+    std::vector<float> result;
 
+    // initialization of the 3D grid
+    init_grid(protein_atoms);
+
+    // compute output
+    result = compute_affinity(molecule_atoms);
+
+    print_result(molecule_atoms,result);
 
     return 0;
 }
