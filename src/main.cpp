@@ -13,7 +13,9 @@
 constexpr int n_channel = 8;
 constexpr float cell_size = 1.25;
 int X,Y,Z;
-std::unordered_map<int, ProteinAtom*> grid_map;
+
+int grid_size;
+std::vector<float> grid_unique;
 
 float x_min = std::numeric_limits<float>::infinity();
 float y_min = std::numeric_limits<float>::infinity();
@@ -22,8 +24,6 @@ float z_min = std::numeric_limits<float>::infinity();
 float x_max = - std::numeric_limits<float>::infinity();
 float y_max = - std::numeric_limits<float>::infinity();
 float z_max = - std::numeric_limits<float>::infinity();
-
-
 
 
 
@@ -54,123 +54,81 @@ void compute_grid_dimension(const std::vector<ProteinAtom>& atoms){
     X = static_cast<int>((x_max - x_min) / cell_size);
     Y = static_cast<int>((y_max - y_min) / cell_size);
     Z = static_cast<int>((z_max - z_min) / cell_size);
+
+    grid_size = X * Y * Z; 
 }
 
 // this function compute the key by using an hash map
 // the input is the cell's id = x_cell + y_cell*10 + z_cell*100
-int compute_global_index(const float& atom_x, const float& atom_y, const float& atom_z){
+int compute_cell_index(const float& atom_x, const float& atom_y, const float& atom_z){
     
     // compute the relative cell in the grid
     int cell_x = static_cast<int>((atom_x - x_min) / cell_size);
     int cell_y = static_cast<int>((atom_y - y_min) / cell_size);
     int cell_z = static_cast<int>((atom_z - z_min) / cell_size);
 
-    // global index of the cell
+    // index of the cell
     int index = cell_x + cell_y * (X) + cell_z * (X * Y);
 
     return index;
 }
 
 void init_grid(std::vector<ProteinAtom>& protein_atoms){
-    
+
     compute_grid_dimension(protein_atoms);
-    // fill the map
-    for(auto& atom : protein_atoms){
-        int index = compute_global_index(atom.x, atom.y, atom.z);
-        grid_map[index] =  &atom;
+
+    // dimension inizialized
+    grid_unique.resize(grid_size * n_channel);
+
+    // initialize the grid
+    for(int i = 0; i < grid_size * n_channel; i++){
+       grid_unique[i] = 0.0;
     }
+
+    // fill each cell occupied by the protein with the 8 values of the channels
+    for(auto &atom : protein_atoms){
+        int cell_index = compute_cell_index(atom.x,atom.y,atom.z);
+        int global_index = cell_index * n_channel;
+
+        for(int i = 0; i < n_channel; i++){
+            grid_unique[global_index + i] = atom.psi[i];
+        }
+    }
+
+    std::cout<<"grid_init"<<std::endl;
+
 }
 
 std::vector<float> compute_affinity(const std::vector<MoleculeAtom> & molecule_atoms){
-    int atom_index = 0;
-    std::vector<float> result(molecule_atoms.size() * 8);
+    int M_atom_index = 0;
+    std::vector<float> result(molecule_atoms.size() * n_channel);
+
     for(const auto& atom : molecule_atoms){
-        int grid_index = compute_global_index(atom.x,atom.y,atom.z);
-        if(grid_map.find(grid_index) != grid_map.end()){
-            ProteinAtom* protein_atom = grid_map[grid_index];
-            for(int i = 0; i < n_channel; i++){
-                result[atom_index * 8 + i] = atom.charge * protein_atom->psi[i];
-            } 
-        } else{
-            for(int i = 0; i < n_channel; i++){
-                result[atom_index * 8 + i] = 0.0;
-            }
-            std::cout<<"Not matched, id molecula: "<<atom.id<<std::endl;
+        int cell_index = compute_cell_index(atom.x,atom.y,atom.z);
+        int global_index = cell_index * n_channel;
+
+        for(int i = 0; i < n_channel; i++){
+            result[M_atom_index * n_channel + i] = grid_unique[global_index + i] * atom.charge;
         }
-        atom_index++;   
+        M_atom_index++;   
     }
+
+    std::cout<<"compute result"<<std::endl;
     
-    return result;
-}
-
-std::vector<float> compute_min_distance(const std::vector<ProteinAtom>& protein_atoms, const std::vector<MoleculeAtom> & molecule_atoms){
-    float dist;
-    std::vector<float> result;
-
-    for(const auto& ligand : molecule_atoms){
-        float min_dist = std::numeric_limits<float>::infinity();
-        float pre_min_dist = std::numeric_limits<float>::infinity();
-        float id;
-
-        for(const auto& protein : protein_atoms){
-            dist = std::sqrt( std::pow((ligand.x - protein.x), 2) +  std::pow((ligand.y - protein.y), 2) + std::pow((ligand.z - protein.z), 2)  );
-            if(dist < min_dist){
-                min_dist = dist;
-                id = protein.id;
-            }       
-        }
-
-        result.push_back(min_dist);
-        result.push_back(id);
-
-    }
-    return result;
-}
-
-std::vector<float> min_distance_protein(const std::vector<ProteinAtom>& protein_atoms){
-    float dist;
-    std::vector<float> result;
-
-    for(const auto& ligand : protein_atoms){
-        float min_dist = std::numeric_limits<float>::infinity();
-        float pre_min_dist = std::numeric_limits<float>::infinity();
-
-        for(const auto& protein : protein_atoms){
-            if(protein.id != ligand.id){
-                dist = std::sqrt( std::pow((ligand.x - protein.x), 2) +  std::pow((ligand.y - protein.y), 2) + std::pow((ligand.z - protein.z), 2)  );
-                if(dist < pre_min_dist){
-                    if(dist < min_dist){
-                        min_dist = dist;
-                    } else{
-                        pre_min_dist = dist;
-                    }
-
-                }
-            }             
-        }
-
-        result.push_back(min_dist);
-        result.push_back(pre_min_dist);
-
-    }
     return result;
 }
 
 void print_result(const std::vector<MoleculeAtom> &molecule_atoms, const std::vector<float> &result){
     for(int i = 0; i<molecule_atoms.size();i++){
         int id = i + 1;
-        int grid_index = compute_global_index(molecule_atoms[i].x,molecule_atoms[i].y,molecule_atoms[i].z);
-        if(grid_map.find(grid_index) != grid_map.end()){
-            ProteinAtom* protein_atom_associated = grid_map[grid_index];
-            std::cout<<"Atom id: "<<id<<", grid cell: "<<grid_index<<", Protein_atom id: "<<protein_atom_associated->id<<std::endl;
-            for(int j = 0; j<8; j++){
-                std::cout<<"  output channel "<<j+1<<": "<<result[i*8 + j]<<std::endl;
-            }
+        int cell_index = compute_cell_index(molecule_atoms[i].x,molecule_atoms[i].y,molecule_atoms[i].z);
+        
+        std::cout<<"Atom id: "<<id<<", grid cell: "<<cell_index<<std::endl;
+        for(int j = 0; j < n_channel; j++){
+            std::cout<<"  output channel "<<j+1<<": "<<result[i * n_channel + j]<<std::endl;
         }
     }
 }
-
-
 
 int main() {
     std::string filepath_protein = "../data/pocket.geneo.csv";
