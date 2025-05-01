@@ -29,14 +29,6 @@ Obiettivo del progetto è quello di scrivere un programma prima in C++ e poi ott
                 -> (If type == 4): then use the fourth channel's value to perform the product
 
 
-Quali sono le difficoltà?
-- parsing del file (non ancora disponibili)
-- scrivere la funzione 'maschera' che discretizzi le posizioni : (x,y,z) to cella
-- costruire la struttura dati che salvi per ogni atomo della proteina la cella con i valori degli 8 canali di quell'atomo (IMPORTANT!!!)
-    - come fare in modo che sia adatta ed efficiente nella parellizzazione in CUDA ?
-- scrivere funzione che faccia il prodotto dei valori della proteina e della molecola dopo aver identificato le celle corrette
-    - fare in modo che sia parallella ed efficiente 
-
 
 
 
