@@ -1,0 +1,6 @@
+# Ignora build temporanei ed eseguibili
+build/
+*.o
+*.out
+*.exe
+main
