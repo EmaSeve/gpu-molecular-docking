@@ -44,7 +44,8 @@
         "iomanip": "cpp",
         "ratio": "cpp",
         "variant": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "charconv": "cpp"
     },
     "git.ignoreLimitWarning": true
 }

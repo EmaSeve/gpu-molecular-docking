@@ -4,14 +4,17 @@
 #include <string>
 #include <vector>
 #include <limits>
-#include <unordered_map>
 #include <cmath>
+
+#include <chrono>
+#include <random>
+
 
 #include "data_structures.h"
 #include "parser.h"
+#include "gpu_functions.h"
+#include "constants.h"
 
-constexpr int n_channel = 8;
-constexpr float cell_size = 1.25;
 int X,Y,Z;
 
 int grid_size;
@@ -58,8 +61,7 @@ void compute_grid_dimension(const std::vector<ProteinAtom>& atoms){
     grid_size = X * Y * Z; 
 }
 
-// this function compute the key by using an hash map
-// the input is the cell's id = x_cell + y_cell*10 + z_cell*100
+
 int compute_cell_index(const float& atom_x, const float& atom_y, const float& atom_z){
     
     // compute the relative cell in the grid
@@ -94,10 +96,8 @@ void init_grid(std::vector<ProteinAtom>& protein_atoms){
             grid_unique[global_index + i] = atom.psi[i];
         }
     }
-
-    std::cout<<"grid_init"<<std::endl;
-
 }
+
 
 std::vector<float> compute_affinity(const std::vector<MoleculeAtom> & molecule_atoms){
     int M_atom_index = 0;
@@ -113,8 +113,24 @@ std::vector<float> compute_affinity(const std::vector<MoleculeAtom> & molecule_a
         M_atom_index++;   
     }
 
-    std::cout<<"compute result"<<std::endl;
-    
+    return result;
+}
+
+std::vector<float> compute_affinity_channel(const std::vector<MoleculeAtom> & molecule_atoms){
+    int M_atom_index = 0;
+    std::vector<float> result(molecule_atoms.size());
+
+    for(const auto& atom : molecule_atoms){
+        int cell_index = compute_cell_index(atom.x,atom.y,atom.z);
+        int global_index = cell_index * n_channel;
+
+        for(int i = 0; i < n_channel; i++){
+            if(atom.channel[i] == 1)
+                result[M_atom_index] = grid_unique[global_index + i] * atom.charge;
+        }
+        M_atom_index++;   
+    }
+
     return result;
 }
 
@@ -122,13 +138,37 @@ void print_result(const std::vector<MoleculeAtom> &molecule_atoms, const std::ve
     for(int i = 0; i<molecule_atoms.size();i++){
         int id = i + 1;
         int cell_index = compute_cell_index(molecule_atoms[i].x,molecule_atoms[i].y,molecule_atoms[i].z);
-        
+        int size = result.size() / molecule_atoms.size();
         std::cout<<"Atom id: "<<id<<", grid cell: "<<cell_index<<std::endl;
-        for(int j = 0; j < n_channel; j++){
-            std::cout<<"  output channel "<<j+1<<": "<<result[i * n_channel + j]<<std::endl;
+
+        for(int j = 0; j < size; j++){
+                std::cout<<"  output on channel "<<j+1<<": "<<result[i * size + j]<<std::endl;
         }
     }
 }
+
+void valutate_performance_cpu(const int type, const std::vector<MoleculeAtom> &molecule_atoms) {
+    const int num_runs = 100;
+    std::chrono::duration<double> total_time(0);
+    std::vector<float> result;
+    
+    for(int i = 0; i < num_runs; i++){
+        auto start = std::chrono::high_resolution_clock::now();
+        if(type == 1) {
+            result = compute_affinity(molecule_atoms);
+        } else if(type == 2) {
+            result = compute_affinity_channel(molecule_atoms);
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        total_time += end - start;
+    }
+    
+    double average_time = total_time.count() / num_runs;
+    std::cout << "Average time used to compute " << 
+              (type == 1 ? "general" : "channel") << 
+              " affinity: " << average_time << std::endl;
+}
+
 
 int main() {
     std::string filepath_protein = "../data/pocket.geneo.csv";
@@ -137,13 +177,51 @@ int main() {
     auto protein_atoms = parse_protein_file(filepath_protein);
     std::vector<float> result;
 
-    // initialization of the 3D grid
+    
     init_grid(protein_atoms);
 
-    // compute output
     result = compute_affinity(molecule_atoms);
-
     print_result(molecule_atoms,result);
+
+    result = compute_affinity_channel(molecule_atoms);
+    print_result(molecule_atoms,result); 
+
+    valutate_performance_cpu(1,molecule_atoms);
+    valutate_performance_cpu(2,molecule_atoms);
+
+    
+    std::cout << "\n===== GPU PROCESSING =====\n";
+    
+    // Inizializza l'ambiente CUDA
+    gpu::init();
+    gpu::init_grid(grid_unique, grid_size * n_channel);
+    
+    // AoS approach
+    std::cout << "\n--- AoS Approach ---\n";
+    std::vector<float> result_gpu = gpu::compute_affinity(molecule_atoms);
+    print_result(molecule_atoms, result_gpu);
+    
+    /* result_gpu = gpu::compute_affinity_channel(molecule_atoms);
+    print_result(molecule_atoms, result_gpu); */
+    
+    gpu::evaluate_performance(1, molecule_atoms); // all channel
+    // gpu::evaluate_performance(2, molecule_atoms);
+    
+    // SoA approach
+    std::cout << "\n--- SoA Approach ---\n";
+    MoleculeData molecule_data = convert_molecule_to_SoA(molecule_atoms);
+    
+    result_gpu = gpu::compute_affinity_soa(molecule_data);
+    print_result(molecule_atoms, result_gpu);
+    
+    /* result_gpu = gpu::compute_affinity_channel_soa(molecule_data);
+    print_result(molecule_atoms, result_gpu); */
+    
+    gpu::evaluate_performance_soa(1, molecule_data);// all channel
+    // gpu::evaluate_performance_soa(2, molecule_data);
+    
+    // Cleanup
+    gpu::cleanup();
 
     return 0;
 }

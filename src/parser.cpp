@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "random.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -30,6 +31,7 @@ std::vector<MoleculeAtom> parse_ligand_file(const std::string& filename) {
         atom.y = y;
         atom.z = z;
         atom.charge = charge;
+        atom.channel = random_channel();
 
         atoms.push_back(atom);
 
