@@ -49,8 +49,4 @@ The program is initially developed in C++, and later optimized with CUDA. The co
 ## File structure
 - `src/` – C++ and CUDA source code
 - `data/` – Input files
-- `notes/` – Project notes and specs
 
-## Build
-```bash
-g++ -std=c++17 -o main src/*.cpp

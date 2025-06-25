@@ -46,3 +46,22 @@ std::vector<CudaMoleculeAtom> convert_molecule_to_AoS_gpu(const std::vector<Mole
     } 
     return cuda_atoms;
 }
+
+extern int X, Y, Z;
+extern float x_min, y_min, z_min;
+
+GridConstants convert_to_grid_constants(const int n_channel, const float cell_size) {
+    GridConstants constants;
+
+    constants.n_channel = n_channel;
+    constants.cell_size = cell_size;
+
+    constants.X = X;
+    constants.Y = Y;
+    constants.Z = Z;
+    constants.x_min = x_min;
+    constants.y_min = y_min;
+    constants.z_min = z_min;
+    
+    return constants;
+}

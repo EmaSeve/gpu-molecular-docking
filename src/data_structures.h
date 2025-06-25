@@ -48,10 +48,19 @@ struct MoleculeDataGPU {
     int* channels[8];
 };
 
+struct GridConstants{
+    int n_channel;
+    float cell_size;
+    int X, Y, Z;
+    float x_min, y_min, z_min;
+};
+
 // Funzioni di conversione AoS
 std::vector<CudaMoleculeAtom> convert_molecule_to_AoS_gpu(const std::vector<MoleculeAtom>& molecule_atoms);
 
 // Funzioni di conversione SoA
 MoleculeData convert_molecule_to_SoA(const std::vector<MoleculeAtom>& molecule_atoms);
+
+GridConstants convert_to_grid_constants(const int n_channel, const float cell_size);
 
 #endif
