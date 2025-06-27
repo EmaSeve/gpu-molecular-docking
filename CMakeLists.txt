@@ -52,9 +52,6 @@ endforeach()
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wall")
 
-# Set CUDA architectures (adjust based on your GPU)
-set_property(TARGET main PROPERTY CUDA_ARCHITECTURES 61 70 75 80 86)
-
 #########################################################################
 #### List the source files that compose the application
 #########################################################################
@@ -102,6 +99,9 @@ set_target_properties(main
       CUDA_STANDARD_REQUIRED ON
       CUDA_EXTENSIONS OFF
 )
+
+# Set CUDA architectures (adjust based on your GPU)
+set_property(TARGET main PROPERTY CUDA_ARCHITECTURES 61 70 75 80 86)
 
 # add the dependencies
 target_link_libraries(main CUDA::cudart_static)
