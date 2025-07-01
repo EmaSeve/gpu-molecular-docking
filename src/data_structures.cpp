@@ -12,7 +12,7 @@ MoleculeData convert_molecule_to_SoA(const std::vector<MoleculeAtom>& molecule_a
     molecule_data.z.resize(molecule_size);
     molecule_data.charge.resize(molecule_size);
     for (int j = 0; j < 8; j++) {
-        molecule_data.channels[j].resize(molecule_size);
+        molecule_data.channel[j].resize(molecule_size);
     }
 
     for(int i = 0; i < molecule_size; i++){
@@ -22,7 +22,7 @@ MoleculeData convert_molecule_to_SoA(const std::vector<MoleculeAtom>& molecule_a
         molecule_data.z[i] = molecule_atoms[i].z;
         molecule_data.charge[i] = molecule_atoms[i].charge;
         for(int j = 0; j < 8; j++){
-            molecule_data.channels[j][i] = molecule_atoms[i].channel[j];
+            molecule_data.channel[j][i] = molecule_atoms[i].channel[j];
         }
     }
     return molecule_data;
