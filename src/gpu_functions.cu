@@ -77,12 +77,14 @@ namespace gpu {
 
             int channel = 0;
 
+            int cell_idx = compute_cell_index(x, y, z);
+
             for(int i = 0; i < d_constants.n_channel; i++){
                 if(molecule_atoms[idx].channel[i] == 1)
                     channel = i;
             }
             
-            result[idx] = grid_unique[idx + channel];
+            result[idx] = grid_unique[cell_idx + channel];
 
         }
                                                    
