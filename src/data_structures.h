@@ -32,7 +32,7 @@ struct MoleculeData {
     std::vector<int> id;
     std::vector<float> x, y, z;
     std::vector<float> charge;
-    std::array<std::vector<int>, 8> channels; 
+    std::array<std::vector<int>, 8> channel; 
     //                  column: atom
     //     row:channel   0 , 0 , 1 ,  ... for all atoms
     //                   1 , 0 , 0 ,  ... for all atoms         

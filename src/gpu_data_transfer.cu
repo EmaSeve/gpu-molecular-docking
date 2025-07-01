@@ -22,8 +22,8 @@ MoleculeDataGPU convert_molecule_to_SoA_gpu(const MoleculeData& host) {
     cudaMemcpy(device.charge, host.charge.data(), num_atoms * sizeof(float), cudaMemcpyHostToDevice);
 
     for(int i = 0; i < 8; i++){
-        cudaMalloc(&device.channels[i], num_atoms * sizeof(int));
-        cudaMemcpy(device.channels[i], host.channels[i].data(), num_atoms * sizeof(int), cudaMemcpyHostToDevice);
+        cudaMalloc(&device.channel[i], num_atoms * sizeof(int));
+        cudaMemcpy(device.channel[i], host.channel[i].data(), num_atoms * sizeof(int), cudaMemcpyHostToDevice);
     }
 
     return device;
@@ -38,7 +38,7 @@ void free_molecule_gpu(MoleculeDataGPU& device) {
     cudaFree(device.charge);
     
     for (int i = 0; i < 8; i++) {
-        cudaFree(device.channels[i]);
+        cudaFree(device.channel[i]);
     }
     
     // Opzionale: imposta i puntatori a nullptr per evitare double-free
@@ -49,7 +49,7 @@ void free_molecule_gpu(MoleculeDataGPU& device) {
     device.charge = nullptr;
     
     for (int i = 0; i < 8; i++) {
-        device.channels[i] = nullptr;
+        device.channel[i] = nullptr;
     }
 }
 }
