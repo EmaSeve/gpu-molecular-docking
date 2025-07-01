@@ -76,7 +76,7 @@ namespace gpu {
             float charge = molecule_atoms[idx].charge;
 
             for(int i = 0; i < d_constants.n_channel; i++){
-                if(molecule_atoms[idx].channels[i] == 1)
+                if(molecule_atoms[idx].channel[i] == 1)
                     int channel = i;
             }
             
