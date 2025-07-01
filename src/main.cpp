@@ -201,11 +201,11 @@ int main() {
     std::vector<float> result_gpu = gpu::compute_affinity(molecule_atoms);
     print_result(molecule_atoms, result_gpu);
     
-    /* result_gpu = gpu::compute_affinity_channel(molecule_atoms);
+    result_gpu = gpu::compute_affinity_channel(molecule_atoms);
     print_result(molecule_atoms, result_gpu); */
     
     gpu::evaluate_performance(1, molecule_atoms); // all channel
-    // gpu::evaluate_performance(2, molecule_atoms);
+    gpu::evaluate_performance(2, molecule_atoms);
     
     // SoA approach
     std::cout << "\n--- SoA Approach ---\n";
