@@ -181,10 +181,10 @@ int main() {
     init_grid(protein_atoms);
 
     result = compute_affinity(molecule_atoms);
-    print_result(molecule_atoms,result);
+    // print_result(molecule_atoms,result);
 
     result = compute_affinity_channel(molecule_atoms);
-    print_result(molecule_atoms,result); 
+    // print_result(molecule_atoms,result); 
 
     valutate_performance_cpu(1,molecule_atoms);
     valutate_performance_cpu(2,molecule_atoms);
@@ -212,7 +212,7 @@ int main() {
     MoleculeData molecule_data = convert_molecule_to_SoA(molecule_atoms);
     
     result_gpu = gpu::compute_affinity_soa(molecule_data);
-    print_result(molecule_atoms, result_gpu);
+    // print_result(molecule_atoms, result_gpu);
     
     /* result_gpu = gpu::compute_affinity_channel_soa(molecule_data);
     print_result(molecule_atoms, result_gpu); */

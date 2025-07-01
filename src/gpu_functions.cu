@@ -63,10 +63,26 @@ namespace gpu {
 
     }
                                            
-    __global__ void compute_affinity_channel_kernel(const CudaMoleculeAtom* molecule_atoms, 
-                                                   int num_atoms,
-                                                   const float* grid_unique, 
-                                                   float* result);
+    __global__ void compute_affinity_channel_kernel(const CudaMoleculeAtom* molecule_atoms, int num_atoms, const float* grid_unique,
+        float* result){
+            
+            int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+            if(idx >= num_atoms) return;
+
+            float x = molecule_atoms[idx].x;
+            float y = molecule_atoms[idx].y;
+            float z = molecule_atoms[idx].z;
+            float charge = molecule_atoms[idx].charge;
+
+            for(int i = 0; i < d_constants.n_channel; i++){
+                if(molecule_atoms[idx].channels[i] == 1)
+                    int channel = i;
+            }
+            
+            result[idx] = grid_unique[idx + channel];
+
+        }
                                                    
     __global__ void compute_affinity_kernel_soa(const int* id, const float* x, const float* y, const float* z,
         const float* charge, const float* grid_unique, float* result, int num_atoms){
@@ -195,11 +211,47 @@ namespace gpu {
 // ----------------------------------------------------------------------------------------------------
     // Implementazione compute_affinity_channel per AoS
     std::vector<float> compute_affinity_channel(const std::vector<MoleculeAtom>& molecule_atoms) {
-        // Implementazione simile a compute_affinity
-        // ma utilizzerà compute_affinity_channel_kernel
+        if (!initialized || d_grid_unique == nullptr) {
+            std::cerr << "Error: CUDA environment not initialized!" << std::endl;
+            return {};
+        }
+
+        int num_atoms = molecule_atoms.size();
+        int result_size = num_atoms;
+
+        std::vector<float> result(result_size);
+
+        std::vector<CudaMoleculeAtom> cuda_molecules = convert_molecule_to_AoS_gpu(molecule_atoms);
+
+        float* d_result;
+        float* d_molecules;
+        cudaMalloc(&d_cuda_molecules, num_atoms * sizeof(CudaMoleculeAtom));
+        cudaMalloc(&d_result, result_size * sizeof(float));
+
+        cudaMemcpy(d_molecules, cuda_molecules.data(), 
+            num_atoms * sizeof(CudaMoleculeAtom), cudaMemcpyHostToDevice);
+
+        int block_size = 256;
+        int num_blocks = (num_atoms + block_size-1)/ block_size;
+        int shared_mem_size = block_size * n_channel * sizeof(float);
+
+        compute_affinity_channel_kernel<<<num_blocks, block_size, shared_mem_size>>>(
+            d_molecules, num_atoms, d_grid_unique, d_result);
         
-        // [Implementazione simile alla precedente con il kernel channel]
-        return {}; 
+        cudaDeviceSynchronize();
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            std::cerr << "CUDA kernel failed: " << cudaGetErrorString(err) << std::endl;
+        }
+        
+        cudaMemcpy(result.data(), d_result, 
+                   result_size * sizeof(float), cudaMemcpyDeviceToHost);
+         
+        // free gpu memory
+        cudaFree(d_molecules);
+        cudaFree(d_result);
+
+        return result; 
     }
 
 // ----------------------------------------------------------------------------------------------------
