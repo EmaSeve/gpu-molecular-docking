@@ -75,9 +75,11 @@ namespace gpu {
             float z = molecule_atoms[idx].z;
             float charge = molecule_atoms[idx].charge;
 
+            int channel = 0;
+
             for(int i = 0; i < d_constants.n_channel; i++){
                 if(molecule_atoms[idx].channel[i] == 1)
-                    int channel = i;
+                    channel = i;
             }
             
             result[idx] = grid_unique[idx + channel];
@@ -224,8 +226,9 @@ namespace gpu {
         std::vector<CudaMoleculeAtom> cuda_molecules = convert_molecule_to_AoS_gpu(molecule_atoms);
 
         float* d_result;
-        float* d_molecules;
-        cudaMalloc(&d_cuda_molecules, num_atoms * sizeof(CudaMoleculeAtom));
+        CudaMoleculeAtom* d_molecules;
+        
+        cudaMalloc(&d_molecules, num_atoms * sizeof(CudaMoleculeAtom));
         cudaMalloc(&d_result, result_size * sizeof(float));
 
         cudaMemcpy(d_molecules, cuda_molecules.data(), 
