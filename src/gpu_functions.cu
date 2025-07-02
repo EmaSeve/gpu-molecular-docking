@@ -88,7 +88,7 @@ namespace gpu {
 
             if(channel == -1) return;
             
-            result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel];
+            result[idx] = grid_unique[cell_idx  + channel];
         }
                                                    
     __global__ void compute_affinity_kernel_soa(const int* id, const float* x, const float* y, const float* z,
@@ -146,7 +146,7 @@ namespace gpu {
 
             if(channel_thread == -1) return;
 
-            result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel_thread];
+            result[idx] = grid_unique[cell_idx + channel_thread];
 
         }
     
