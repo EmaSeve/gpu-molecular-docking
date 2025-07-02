@@ -35,7 +35,10 @@ namespace gpu {
     }
 
 
-    // Kernel
+// ----------------------------------------------------------------------------------------------------
+// ------------------------------------ Kernel Functions -------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
+  
     __global__ void compute_affinity_kernel(const CudaMoleculeAtom* molecule_atoms, 
         int num_atoms, const float* grid_unique, float* result){
              
@@ -56,7 +59,6 @@ namespace gpu {
                 shared_grid[threadIdx.x * d_constants.n_channel + i] = grid_unique[cell_idx * d_constants.n_channel + i];
             }
 
-
             for(int i=0; i < d_constants.n_channel; i++){
                 result[idx * d_constants.n_channel + i] = charge * shared_grid[threadIdx.x * d_constants.n_channel + i];
             }
@@ -75,7 +77,7 @@ namespace gpu {
             float z = molecule_atoms[idx].z;
             float charge = molecule_atoms[idx].charge;
 
-            int channel = 0;
+            int channel = -1;
 
             int cell_idx = compute_cell_index(x, y, z);
 
@@ -83,9 +85,10 @@ namespace gpu {
                 if(molecule_atoms[idx].channel[i] == 1)
                     channel = i;
             }
-            
-            result[idx] = grid_unique[cell_idx + channel];
 
+            if(channel == -1) return;
+            
+            result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel];
         }
                                                    
     __global__ void compute_affinity_kernel_soa(const int* id, const float* x, const float* y, const float* z,
@@ -108,7 +111,6 @@ namespace gpu {
                 shared_grid[threadIdx.x * d_constants.n_channel + i] = grid_unique[cell_idx * d_constants.n_channel + i];
             }
 
-
             for(int i = 0; i < d_constants.n_channel; i++){
                 result[idx * d_constants.n_channel + i] = charge_thread * shared_grid[threadIdx.x * d_constants.n_channel + i];
             }
@@ -122,13 +124,31 @@ namespace gpu {
             // 
     }
                                                
-    __global__ void compute_affinity_channel_kernel_soa(const int* id,
-                                                       const float* x, const float* y, const float* z,
-                                                       const float* charge,
-                                                       const int* channels[],
-                                                       const float* grid_unique,
-                                                       float* d_result,
-                                                       int num_atoms);
+    __global__ void compute_affinity_channel_kernel_soa(const int* id, const float* x, const float* y, const float* z, 
+        const float* charge, const int* channels[], const float* grid_unique, float* result, int num_atoms){
+
+            int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+            if(idx >= num_atoms) return;
+
+            float x_thread = x[idx];
+            float y_thread = y[idx];
+            float z_thread = z[idx];
+            float charge_thread = charge[idx];
+            int channel_thread = -1;
+
+            int cell_idx = compute_cell_index(x_thread,y_thread,z_thread);
+
+            for(int i = 0; i < d_constants.n_channel; i++){
+                if(channels[i][idx] == 1)
+                    channel_thread = i;
+            }
+
+            if(channel_thread == -1) return;
+
+            result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel_thread];
+
+        }
     
 // ----------------------------------------------------------------------------------------------------
 // ------------------------------------ Initalization -------------------------------------------------
@@ -238,9 +258,9 @@ namespace gpu {
 
         int block_size = 256;
         int num_blocks = (num_atoms + block_size-1)/ block_size;
-        int shared_mem_size = block_size * n_channel * sizeof(float);
+        // int shared_mem_size = block_size * n_channel * sizeof(float); not needed in this case
 
-        compute_affinity_channel_kernel<<<num_blocks, block_size, shared_mem_size>>>(
+        compute_affinity_channel_kernel<<<num_blocks, block_size>>>(
             d_molecules, num_atoms, d_grid_unique, d_result);
         
         cudaDeviceSynchronize();
@@ -315,8 +335,48 @@ namespace gpu {
 // ----------------------------------------------------------------------------------------------------
     // Implementazione compute_affinity_channel per SoA
     std::vector<float> compute_affinity_channel_soa(const MoleculeData& molecule_data) {
-        // [Implementazione simile alla precedente con il kernel channel per SoA]
-        return {}; // Placeholder
+       
+        if (!initialized || d_grid_unique == nullptr) {
+            std::cerr << "Error: CUDA environment not initialized!" << std::endl;
+            return {};
+        }
+        int num_atoms = molecule_data.id.size();
+        int result_size = num_atoms;
+
+        std::vector<float> result(result_size);
+
+        MoleculeDataGPU d_molecule_data = convert_molecule_to_SoA_gpu(molecule_data);
+
+        float* d_result;
+        cudaMalloc(&d_result, result_size * sizeof(float));
+
+        int block_size = 256;
+        int num_blocks = (num_atoms + block_size - 1) / block_size;
+       
+        compute_affinity_channel_kernel_soa<<<num_blocks, block_size>>>(
+            d_molecule_data.id, 
+            d_molecule_data.x, 
+            d_molecule_data.y, 
+            d_molecule_data.z, 
+            d_molecule_data.charge,
+            d_molecule_data.channel,
+            d_grid_unique, d_result, num_atoms);
+        
+        // Synchronization
+        cudaDeviceSynchronize();
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+           std::cerr << "CUDA kernel failed: " << cudaGetErrorString(err) << std::endl;
+        }
+
+        // copy from device to host
+        cudaMemcpy(result.data(), d_result, result_size * sizeof(float), cudaMemcpyDeviceToHost);
+
+        // free gpu memory
+        free_molecule_gpu(d_molecule_data);
+        cudaFree(d_result);
+
+        return result; 
     }
     
 // ----------------------------------------------------------------------------------------------------

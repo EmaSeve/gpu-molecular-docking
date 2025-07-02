@@ -4,7 +4,7 @@
 
 namespace gpu{
 
-// allocazione SoA in gpu
+// Allocate SoA in GPU memory
 MoleculeDataGPU convert_molecule_to_SoA_gpu(const MoleculeData& host) {
     MoleculeDataGPU device;
     size_t num_atoms = host.id.size();
@@ -29,7 +29,7 @@ MoleculeDataGPU convert_molecule_to_SoA_gpu(const MoleculeData& host) {
     return device;
 }
 
-// free SoA memory gpu
+// Free SoA in GPU memory
 void free_molecule_gpu(MoleculeDataGPU& device) {
     cudaFree(device.id);
     cudaFree(device.x);
@@ -41,7 +41,6 @@ void free_molecule_gpu(MoleculeDataGPU& device) {
         cudaFree(device.channel[i]);
     }
     
-    // Opzionale: imposta i puntatori a nullptr per evitare double-free
     device.id = nullptr;
     device.x = nullptr;
     device.y = nullptr;

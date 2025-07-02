@@ -29,7 +29,6 @@ float y_max = - std::numeric_limits<float>::infinity();
 float z_max = - std::numeric_limits<float>::infinity();
 
 
-
 void compute_grid_dimension(const std::vector<ProteinAtom>& atoms){
     
     for(const auto & atom : atoms){
@@ -60,7 +59,6 @@ void compute_grid_dimension(const std::vector<ProteinAtom>& atoms){
 
     grid_size = X * Y * Z; 
 }
-
 
 int compute_cell_index(const float& atom_x, const float& atom_y, const float& atom_z){
     
@@ -97,7 +95,6 @@ void init_grid(std::vector<ProteinAtom>& protein_atoms){
         }
     }
 }
-
 
 std::vector<float> compute_affinity(const std::vector<MoleculeAtom> & molecule_atoms){
     int M_atom_index = 0;
@@ -169,7 +166,6 @@ void valutate_performance_cpu(const int type, const std::vector<MoleculeAtom> &m
               " affinity: " << average_time << std::endl;
 }
 
-
 int main() {
     std::string filepath_protein = "../data/pocket.geneo.csv";
     std::string filepath_molecule = "../data/6ugn_ligand.mol2.csv";
@@ -177,50 +173,42 @@ int main() {
     auto protein_atoms = parse_protein_file(filepath_protein);
     std::vector<float> result;
 
-    
     init_grid(protein_atoms);
 
     result = compute_affinity(molecule_atoms);
-    // print_result(molecule_atoms,result);
-
     result = compute_affinity_channel(molecule_atoms);
-    // print_result(molecule_atoms,result); 
 
     valutate_performance_cpu(1,molecule_atoms);
     valutate_performance_cpu(2,molecule_atoms);
-
-    
+ 
     std::cout << "\n===== GPU PROCESSING =====\n";
     
-    // Inizializza l'ambiente CUDA
+    // Initialized Cuda enviroment
     gpu::init();
     gpu::init_grid(grid_unique, grid_size * n_channel);
     
-    // AoS approach
+// --- Array of Struct approach (for molecules) ---
+
     std::cout << "\n--- AoS Approach ---\n";
     std::vector<float> result_gpu = gpu::compute_affinity(molecule_atoms);
-    print_result(molecule_atoms, result_gpu);
     
     result_gpu = gpu::compute_affinity_channel(molecule_atoms);
-    // print_result(molecule_atoms, result_gpu);
     
     gpu::evaluate_performance(1, molecule_atoms); // all channel
     gpu::evaluate_performance(2, molecule_atoms);
     
-    // SoA approach
+// --- Struct of Array approach (for molecules) ---
+
     std::cout << "\n--- SoA Approach ---\n";
-    MoleculeData molecule_data = convert_molecule_to_SoA(molecule_atoms);
+    MoleculeData molecule_data = convert_molecule_to_SoA(molecule_atoms); // create the AoS data structure
     
     result_gpu = gpu::compute_affinity_soa(molecule_data);
-    // print_result(molecule_atoms, result_gpu);
     
-    /* result_gpu = gpu::compute_affinity_channel_soa(molecule_data);
-    print_result(molecule_atoms, result_gpu); */
+    // result_gpu = gpu::compute_affinity_channel_soa(molecule_data);
     
     gpu::evaluate_performance_soa(1, molecule_data);// all channel
     // gpu::evaluate_performance_soa(2, molecule_data);
     
-    // Cleanup
     gpu::cleanup();
 
     return 0;
