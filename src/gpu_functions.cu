@@ -131,8 +131,24 @@ namespace gpu {
 
             if(idx >= num_atoms) return;
             
+            
+            if(idx == 0){
+
+
+            
             int k = channel[0][0];
-            printf("prova accesso");
+            printf("\nprova accesso 0 0");
+
+            int k = channel[0][24];
+            printf("\nprova accesso24");
+
+            int k = channel[7][24];
+            printf("p\nrova accesso24 channel 7");
+
+            int k = channel[0][25];
+            printf("\nprova accesso 25");
+
+            }
 
 
             float x_thread = x[idx];
