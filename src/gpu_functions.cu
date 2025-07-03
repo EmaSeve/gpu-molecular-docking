@@ -131,11 +131,10 @@ namespace gpu {
 
             if(idx >= num_atoms) return;
             
+            printf("\nidx:%d ",idx);
             
             if(idx == 0){
 
-
-            
             int k = channel[0][0];
             printf("\nprova accesso 0 0");
 
@@ -143,7 +142,7 @@ namespace gpu {
             printf("\nprova accesso24");
 
             k = channel[7][24];
-            printf("p\nrova accesso24 channel 7");
+            printf("\nprova accesso24 channel 7");
 
             k = channel[0][25];
             printf("\nprova accesso 25");
@@ -159,7 +158,10 @@ namespace gpu {
 
             int cell_idx = compute_cell_index(x_thread,y_thread,z_thread);
 
+
+
             for(int i = 0; i < d_constants.n_channel; i++){
+                printf("for loop");
                  if(channel[i] != nullptr && idx < num_atoms) {
                     printf("channel: %d, idx thread: %d\n", i, idx);
                     if(channel[i][idx] == 1)
