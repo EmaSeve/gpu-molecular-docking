@@ -125,19 +125,11 @@ namespace gpu {
     }
                                                
     __global__ void compute_affinity_channel_kernel_soa(const int* id, const float* x, const float* y, const float* z, 
-        const float* charge, int* channel[], const float* grid_unique, float* result, int num_atoms){
+        const float* charge, int* const channel[], const float* grid_unique, float* result, int num_atoms){
 
             int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
             if(idx >= num_atoms) return;
-
-            if(idx == 0){
-                for(int i = 0; i < d_constants.n_channel; i++){
-                    for(int j = 0; j < num_atoms; j++){
-                        printf("\n channel:%d, value:%d, of atom's idx:%d",i,channel[i][j],j);
-                    }
-                }
-            }
                 
 
             float x_thread = x[idx];
@@ -149,10 +141,12 @@ namespace gpu {
             int cell_idx = compute_cell_index(x_thread,y_thread,z_thread);
 
             for(int i = 0; i < d_constants.n_channel; i++){
-                printf("channel: %d, idx thread: %d\n", i, idx);
-                if(channel[i][idx] == 1)
-                    channel_thread = i;
-                printf("\n accessed channel i=%d, idx=%d",i,idx);
+                 if(channel[i] != nullptr && idx < num_atoms) {
+                    printf("channel: %d, idx thread: %d\n", i, idx);
+                    if(channel[i][idx] == 1)
+                        channel_thread = i;
+                    printf("\n accessed channel i=%d, idx=%d",i,idx);
+                }
             }
 
             if(channel_thread == -1) return;
