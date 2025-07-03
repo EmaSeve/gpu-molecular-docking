@@ -142,7 +142,6 @@ namespace gpu {
             }
 
 
-
             float x_thread = x[idx];
             float y_thread = y[idx];
             float z_thread = z[idx];
@@ -159,7 +158,7 @@ namespace gpu {
                     if(channel[i][idx] == 1)
                         channel_thread = i;
                     printf("\n accessed channel i=%d, idx=%d",i,idx);
-                }
+                
             }
 
             if(channel_thread == -1) return;
