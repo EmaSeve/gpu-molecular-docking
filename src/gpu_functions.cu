@@ -155,7 +155,7 @@ namespace gpu {
 
 
 
-            for(int i = 0; i < d_constants.n_channel; i++){
+            for(int i = 0; i < 8; i++){
                 printf("for loop");
                  if(channel[i] != nullptr && idx < num_atoms) {
                     printf("channel: %d, idx thread: %d\n", i, idx);
