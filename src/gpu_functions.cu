@@ -135,17 +135,12 @@ namespace gpu {
             
             if(idx == 0){
 
-            int k = channel[0][0];
-            printf("\nprova accesso 0 0");
-
-            k = channel[0][24];
-            printf("\nprova accesso24");
-
-            k = channel[7][24];
-            printf("\nprova accesso24 channel 7");
-
-            k = channel[0][25];
-            printf("\nprova accesso 25");
+            int k ;
+            for(int i = 0 ; i<8; i++){
+                printf("\ni:%d",i);
+                k = channel[i][0];
+                
+            }
 
             }
 
