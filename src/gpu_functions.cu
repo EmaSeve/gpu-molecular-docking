@@ -152,13 +152,11 @@ namespace gpu {
 
 
 
-            for(int i = 0; i < d_constants.n_channel; i++){
-                printf("for loop\n");
-                    printf("channel: %d, idx thread: %d\n", i, idx);
-                    if(channel[i][idx] == 1)
-                        channel_thread = i;
-                    printf("\n accessed channel i=%d, idx=%d",i,idx);
-                
+             for(int i = 0; i < n_channel; i++) {
+                if(channel[i] != nullptr && channel[i][idx] == 1) {
+                    channel_thread = i;
+                    break; 
+                }
             }
 
             if(channel_thread == -1) return;
