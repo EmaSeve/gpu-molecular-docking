@@ -195,8 +195,8 @@ int main() {
     result_gpu = gpu::compute_affinity(molecule_atoms);
     result_gpu = gpu::compute_affinity_channel(molecule_atoms);
     
-    gpu::evaluate_performance(1, molecule_atoms); // all channel
-    gpu::evaluate_performance(2, molecule_atoms);
+    /* gpu::evaluate_performance(1, molecule_atoms); // all channel
+    gpu::evaluate_performance(2, molecule_atoms); */
     
 // --- Struct of Array approach (for molecules) ---
 
@@ -206,8 +206,8 @@ int main() {
     result_gpu = gpu::compute_affinity_soa(molecule_data);
     result_gpu = gpu::compute_affinity_channel_soa(molecule_data);
     
-    gpu::evaluate_performance_soa(1, molecule_data);// all channel
-    gpu::evaluate_performance_soa(2, molecule_data);
+   /*  gpu::evaluate_performance_soa(1, molecule_data);// all channel
+    gpu::evaluate_performance_soa(2, molecule_data); */
     
     gpu::cleanup();
 
