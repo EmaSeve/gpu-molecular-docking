@@ -133,16 +133,14 @@ namespace gpu {
             
             printf("\nidx:%d ",idx);
             
-            if(idx == 0){
 
-            int* k[8];
+            int k;
             for(int i = 0 ; i<8; i++){
                 printf("\ni:%d",i);
-                k = channel[i];
+                k = channel[i][idx];
                 
             }
 
-            }
 
 
             float x_thread = x[idx];
@@ -157,9 +155,8 @@ namespace gpu {
 
             for(int i = 0; i < d_constants.n_channel; i++){
                 printf("for loop\n");
-                 
                     printf("channel: %d, idx thread: %d\n", i, idx);
-                    if(k[i][idx] == 1)
+                    if(channel[i][idx] == 1)
                         channel_thread = i;
                     printf("\n accessed channel i=%d, idx=%d",i,idx);
                 }
