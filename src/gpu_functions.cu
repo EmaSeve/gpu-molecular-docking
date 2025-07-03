@@ -140,7 +140,7 @@ namespace gpu {
             int cell_idx = compute_cell_index(x_thread,y_thread,z_thread);
 
             for(int i = 0; i < d_constants.n_channel; i++){
-                std::cout<<"channel:"<<i<<"idx thread:"<<idx<<std::endl;
+                printf("channel: %d, idx thread: %d\n", i, idx);
                 if(channel[i][idx] == 1)
                     channel_thread = i;
             }
