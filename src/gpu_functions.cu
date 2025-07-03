@@ -129,7 +129,7 @@ namespace gpu {
 
             int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-            if(idx >= num_atoms) return;
+            if(idx >= num_atoms-1) return;
 
             float x_thread = x[idx];
             float y_thread = y[idx];
@@ -354,12 +354,7 @@ namespace gpu {
         int block_size = 256;
         int num_blocks = (num_atoms + block_size - 1) / block_size;
 
-        for(int i = 0; i < n_channel; i++){
-            int size = molecule_data.channel[i].size();
-            std::cout<<"size of each channel:"<<size<<std::endl;
-        }
-
-        std::cout<<"num_atoms:"<<num_atoms<<std::endl;
+        
         
        
         compute_affinity_channel_kernel_soa<<<num_blocks, block_size>>>(
