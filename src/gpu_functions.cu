@@ -172,6 +172,8 @@ namespace gpu {
 
             if(channel_thread == -1) return;
 
+            printf("before grid_unique");
+
             result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel_thread];
 
         }
