@@ -358,7 +358,8 @@ namespace gpu {
             int size = molecule_data.channel[i].size();
             std::cout<<"size of each channel:"<<size<<std::endl;
         }
-        std::cout"num_atoms:"<<num_atoms<<std::endl;
+
+        std::cout<<"num_atoms:"<<num_atoms<<std::endl;
         
        
         compute_affinity_channel_kernel_soa<<<num_blocks, block_size>>>(
