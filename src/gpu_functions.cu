@@ -130,7 +130,10 @@ namespace gpu {
             int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
             if(idx >= num_atoms) return;
-                
+            
+            int k = channel[0][0];
+            printf("prova accesso");
+
 
             float x_thread = x[idx];
             float y_thread = y[idx];
