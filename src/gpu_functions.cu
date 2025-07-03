@@ -152,7 +152,7 @@ namespace gpu {
 
 
 
-             for(int i = 0; i < n_channel; i++) {
+             for(int i = 0; i < 8; i++) {
                 if(channel[i] != nullptr && channel[i][idx] == 1) {
                     channel_thread = i;
                     break; 
