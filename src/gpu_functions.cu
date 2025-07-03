@@ -139,13 +139,13 @@ namespace gpu {
             int k = channel[0][0];
             printf("\nprova accesso 0 0");
 
-            int k = channel[0][24];
+            k = channel[0][24];
             printf("\nprova accesso24");
 
-            int k = channel[7][24];
+            k = channel[7][24];
             printf("p\nrova accesso24 channel 7");
 
-            int k = channel[0][25];
+            k = channel[0][25];
             printf("\nprova accesso 25");
 
             }
