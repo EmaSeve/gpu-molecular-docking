@@ -131,6 +131,15 @@ namespace gpu {
 
             if(idx >= num_atoms) return;
 
+            if(idx == 0){
+                for(int i = 0; i < d_constants.n_channel; i++){
+                    for(int j = 0; j < num_atoms; j++){
+                        printf("\n channel:%d, value:%d, of atom's idx:%d",i,channel[i][j],j);
+                    }
+                }
+            }
+                
+
             float x_thread = x[idx];
             float y_thread = y[idx];
             float z_thread = z[idx];
