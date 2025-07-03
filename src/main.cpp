@@ -204,10 +204,10 @@ int main() {
     MoleculeData molecule_data = convert_molecule_to_SoA(molecule_atoms); // create the AoS data structure
     
     result_gpu = gpu::compute_affinity_soa(molecule_data);
-    // result_gpu = gpu::compute_affinity_channel_soa(molecule_data);
+    result_gpu = gpu::compute_affinity_channel_soa(molecule_data);
     
     gpu::evaluate_performance_soa(1, molecule_data);// all channel
-    // gpu::evaluate_performance_soa(2, molecule_data);
+    gpu::evaluate_performance_soa(2, molecule_data);
     
     gpu::cleanup();
 

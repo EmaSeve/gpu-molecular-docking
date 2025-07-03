@@ -45,7 +45,16 @@
         "ratio": "cpp",
         "variant": "cpp",
         "algorithm": "cpp",
-        "charconv": "cpp"
+        "charconv": "cpp",
+        "__hash_table": "cpp",
+        "__node_handle": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "optional": "cpp",
+        "print": "cpp",
+        "queue": "cpp",
+        "stack": "cpp",
+        "unordered_map": "cpp"
     },
     "git.ignoreLimitWarning": true
 }
