@@ -150,13 +150,15 @@ namespace gpu {
 
             int cell_idx = compute_cell_index(x_thread,y_thread,z_thread);
 
-
-
+            int value_chanel;
              for(int i = 0; i < 8; i++) {
-                if(channel[i] != nullptr && channel[i][idx] == 1) {
+                value_channel = channel[i][idx];
+                if(value_chanel == 1){
                     channel_thread = i;
-                    break; 
+                    break;
                 }
+                 
+                
             }
 
             if(channel_thread == -1) return;
