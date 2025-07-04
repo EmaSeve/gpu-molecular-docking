@@ -149,8 +149,6 @@ namespace gpu {
                 }
             }
            
-
-
             float x_thread = x[idx];
             float y_thread = y[idx];
             float z_thread = z[idx];
@@ -170,7 +168,7 @@ namespace gpu {
 
             printf("before grid_unique");
 
-            result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel_thread];
+            //result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel_thread];
 
         }
     
