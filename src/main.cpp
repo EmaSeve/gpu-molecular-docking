@@ -171,12 +171,12 @@ int main() {
     std::string filepath_molecule = "../data/6ugn_ligand.mol2.csv";
     auto molecule_atoms = parse_ligand_file(filepath_molecule);
     auto protein_atoms = parse_protein_file(filepath_protein);
-    std::vector<float> result;
+    std::vector<float> result[2];
 
     init_grid(protein_atoms);
 
-    result = compute_affinity(molecule_atoms);
-    result = compute_affinity_channel(molecule_atoms);
+    result[0] = compute_affinity(molecule_atoms);
+    result[1] = compute_affinity_channel(molecule_atoms);
 
     valutate_performance_cpu(1,molecule_atoms);
     valutate_performance_cpu(2,molecule_atoms);
@@ -190,10 +190,10 @@ int main() {
 // --- Array of Struct approach (for molecules) ---
 
     std::cout << "\n--- AoS Approach ---\n";
-    std::vector<float> result_gpu;
+    std::vector<float> result_gpu[4];
 
-    result_gpu = gpu::compute_affinity(molecule_atoms);
-    result_gpu = gpu::compute_affinity_channel(molecule_atoms);
+    result_gpu[0] = gpu::compute_affinity(molecule_atoms);
+    result_gpu[1] = gpu::compute_affinity_channel(molecule_atoms);
     
     /* gpu::evaluate_performance(1, molecule_atoms); // all channel
     gpu::evaluate_performance(2, molecule_atoms); */
@@ -203,11 +203,25 @@ int main() {
     std::cout << "\n--- SoA Approach ---\n";
     MoleculeData molecule_data = convert_molecule_to_SoA(molecule_atoms); // create the AoS data structure
     
-    result_gpu = gpu::compute_affinity_soa(molecule_data);
-    result_gpu = gpu::compute_affinity_channel_soa(molecule_data);
+    result_gpu[2] = gpu::compute_affinity_soa(molecule_data);
+    result_gpu[3] = gpu::compute_affinity_channel_soa(molecule_data);
     
    /*  gpu::evaluate_performance_soa(1, molecule_data);// all channel
     gpu::evaluate_performance_soa(2, molecule_data); */
+
+    std::cout<<"\nCheck general result:\n"<<std::endl;
+    for(int i = 0; i<result[0].size();i++){
+        if(result[0][i] != result_gpu[0][i])
+            std::cout<<"\nerror general AoS\n"<<std::endl;
+        if(result[0][i] != result_gpu[2][i])
+            std::cout<<"\nerror general SoA\n"<<std::endl;
+
+        if(result[1][i] != result_gpu[1][i])
+            std::cout<<"\nerror channel AoS\n"<<std::endl;
+        if(result[1][i] != result_gpu[3][i])
+            std::cout<<"\nerror channel SoA\n"<<std::endl;
+        
+    }
     
     gpu::cleanup();
 
