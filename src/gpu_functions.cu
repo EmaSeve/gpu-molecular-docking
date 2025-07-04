@@ -125,7 +125,7 @@ namespace gpu {
     }
                                                
     __global__ void compute_affinity_channel_kernel_soa(const int* id, const float* x, const float* y, const float* z, 
-        const float* charge, const int** channel, const float* grid_unique, float* result, int num_atoms){
+        const float* charge, const int* channel, const float* grid_unique, float* result, int num_atoms){
 
             int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
