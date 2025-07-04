@@ -131,8 +131,6 @@ namespace gpu {
 
             if(idx >= num_atoms) return;
             
-            printf("\nidx:%d ",idx);
-            
             int k = 0;
             int* p = nullptr;
             if(idx == 0){
@@ -157,16 +155,15 @@ namespace gpu {
 
             int cell_idx = compute_cell_index(x_thread,y_thread,z_thread);
 
-            /*  for(int i = 0; i < 8; i++) {    
+            printf("\nidx:%d ",idx);
+            for(int i = 0; i < 8; i++) {    
                 if(channel[i][idx] == 1){
                     channel_thread = i;
                     break;
                 }
-            } */
+            } 
 
             if(channel_thread == -1) return;
-
-            printf("before grid_unique");
 
             result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel_thread];
 
