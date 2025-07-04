@@ -45,7 +45,7 @@ struct MoleculeDataGPU {
     float* y;
     float* z;
     float* charge;
-    int* channel[8];
+    int** channel;
 };
 
 struct GridConstants{
