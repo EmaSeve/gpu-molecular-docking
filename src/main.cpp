@@ -215,12 +215,13 @@ int main() {
             std::cout<<"\nerror general AoS\n"<<std::endl;
         if(result[0][i] != result_gpu[2][i])
             std::cout<<"\nerror general SoA\n"<<std::endl;
+    }
 
+    for(int i = 0; i < result[1].size();i++){
         if(result[1][i] != result_gpu[1][i])
             std::cout<<"\nerror channel AoS\n"<<std::endl;
         if(result[1][i] != result_gpu[3][i])
             std::cout<<"\nerror channel SoA\n"<<std::endl;
-        
     }
     
     gpu::cleanup();
