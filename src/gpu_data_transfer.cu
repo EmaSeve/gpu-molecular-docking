@@ -33,6 +33,7 @@ MoleculeDataGPU convert_molecule_to_SoA_gpu(const MoleculeData& host) {
     cudaMalloc(&device.channel, n_channel * sizeof(int*));
     cudaMemcpy(device.channel, temp_channel, n_channel * sizeof(int*), cudaMemcpyHostToDevice);
 
+    std::cout<<"Correctly converted to SoA gpu"<<std::endl;
 
     return device;
 }
