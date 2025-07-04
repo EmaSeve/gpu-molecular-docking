@@ -153,22 +153,22 @@ namespace gpu {
             float y_thread = y[idx];
             float z_thread = z[idx];
             float charge_thread = charge[idx];
-            int channel_thread = -1;
+            int channel_thread = 0;
 
             int cell_idx = compute_cell_index(x_thread,y_thread,z_thread);
 
-             for(int i = 0; i < 8; i++) {    
+            /*  for(int i = 0; i < 8; i++) {    
                 if(channel[i][idx] == 1){
                     channel_thread = i;
                     break;
                 }
-            }
+            } */
 
             if(channel_thread == -1) return;
 
             printf("before grid_unique");
 
-            //result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel_thread];
+            result[idx] = grid_unique[cell_idx * d_constants.n_channel + channel_thread];
 
         }
     
