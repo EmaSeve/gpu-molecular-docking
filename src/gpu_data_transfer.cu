@@ -44,18 +44,21 @@ void free_molecule_gpu(MoleculeDataGPU& device) {
     cudaFree(device.z);
     cudaFree(device.charge);
     
-    for (int i = 0; i < 8; i++) {
-        cudaFree(device.channel[i]);
+    int* channel_host[n_channel];  
+    cudaMemcpy(channel_host, device.channel, n_channel * sizeof(int*), cudaMemcpyDeviceToHost);
+
+    for (int i = 0; i < n_channel; ++i) {
+        cudaFree(channel_host[i]);
     }
     
+    cudaFree(device.channel);
+
     device.id = nullptr;
     device.x = nullptr;
     device.y = nullptr;
     device.z = nullptr;
     device.charge = nullptr;
+    device.channel = nullptr;
     
-    for (int i = 0; i < 8; i++) {
-        device.channel[i] = nullptr;
-    }
 }
 }
