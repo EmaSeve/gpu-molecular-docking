@@ -133,7 +133,7 @@ namespace gpu {
             
             int k = 0;
             int* p = nullptr;
-            if(idx == 0){
+            
                 for(int i = 0; i<8;i++){
                     p = channel[i];
                     printf("\n accessed pointer i=%d",i);
@@ -145,7 +145,7 @@ namespace gpu {
                         printf("\n accessed channel i=%d, idx_atoms=%d",j,i);
                     }
                 }
-            }
+            
            
             float x_thread = x[idx];
             float y_thread = y[idx];
