@@ -195,19 +195,19 @@ int main() {
     result_gpu[0] = gpu::compute_affinity(molecule_atoms);
     result_gpu[1] = gpu::compute_affinity_channel(molecule_atoms);
     
-    /* gpu::evaluate_performance(1, molecule_atoms); // all channel
-    gpu::evaluate_performance(2, molecule_atoms); */
+    gpu::evaluate_performance(1, molecule_atoms); // all channel
+    gpu::evaluate_performance(2, molecule_atoms); 
     
 // --- Struct of Array approach (for molecules) ---
 
     std::cout << "\n--- SoA Approach ---\n";
-    MoleculeData molecule_data = convert_molecule_to_SoA(molecule_atoms); // create the AoS data structure
+    MoleculeData molecule_data = convert_molecule_to_SoA(molecule_atoms);
     
     result_gpu[2] = gpu::compute_affinity_soa(molecule_data);
     result_gpu[3] = gpu::compute_affinity_channel_soa(molecule_data);
     
-   /*  gpu::evaluate_performance_soa(1, molecule_data);// all channel
-    gpu::evaluate_performance_soa(2, molecule_data); */
+    gpu::evaluate_performance_soa(1, molecule_data);// all channel
+    gpu::evaluate_performance_soa(2, molecule_data); 
 
     std::cout<<"\nCheck general result:\n"<<std::endl;
     for(int i = 0; i<result[0].size();i++){
@@ -217,30 +217,13 @@ int main() {
             std::cout<<"\nerror general SoA\n"<<std::endl;
     }
 
-  /*   for(int i = 0; i < result[1].size();i++){
+    for(int i = 0; i < result[1].size();i++){
         if(result[1][i] != result_gpu[1][i])
             std::cout<<"\nerror channel AoS\n"<<std::endl;
         if(result[1][i] != result_gpu[3][i])
             std::cout<<"\nerror channel SoA\n"<<std::endl;
-    } */
-    std::cout<<"\ncpu channel:\n";
-
-    for(int i = 0; i<result[1].size();i++){
-        std::cout<<" "<<result[1][i];
-        
-    }
-    std::cout<<"\nGPU channe AoS:\n";
-    for(int i = 0; i<result_gpu[1].size();i++){
-        std::cout<<" "<<result_gpu[1][i];
-        
-    }
-    std::cout<<"\nGPU channe Soa:\n";
-    for(int i = 0; i<result_gpu[3].size();i++){
-        std::cout<<" "<<result_gpu[3][i];
-        
-    }
-
-
+    } 
+    
     gpu::cleanup();
 
     return 0;
