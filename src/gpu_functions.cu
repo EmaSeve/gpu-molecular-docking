@@ -143,10 +143,10 @@ namespace gpu {
                 for(int i = 0; i<num_atoms;i++){
                     for(int j = 0;j<8;j++){
                         k = channel[j][i];
-                        if(i==idx && k==1){
+                        /* if(i==idx && k==1){
                             channel_thread = i;
                             printf("\n idx:%d, value:%d, channel:%d, atoms:%d",idx,k,j,i);
-                        }
+                        } */
                             
                             
                         printf("\n accessed channel i=%d, idx_atoms=%d",j,i);
