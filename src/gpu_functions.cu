@@ -147,7 +147,7 @@ namespace gpu {
                             channel_thread = i;
                             printf("\n idx:%d, value:%d, channel:%d, atoms:%d",idx,k,j,i);
                         } */
-                            
+                        printf("value of k:%d",k)    
                             
                         printf("\n accessed channel i=%d, idx_atoms=%d",j,i);
                     }
