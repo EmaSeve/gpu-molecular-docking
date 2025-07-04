@@ -133,13 +133,22 @@ namespace gpu {
             
             printf("\nidx:%d ",idx);
             
+            int k = 0;
+            int* p = nullptr;
+            if(idx == 0){
+                for(int i = 0; i<8;i++){
+                    p = channel[i];
+                    printf("\n accessed pointer i=%d",i);
+                }
 
-            int k;
-            for(int i = 0 ; i<8; i++){
-                printf("\ni:%d",i);
-                k = channel[i][idx];
-                
+                for(int i = 0; i<num_atoms;i++){
+                    for(int j = 0;j<8;j++){
+                        k = channel[j][i];
+                        printf("\n accessed channel i=%d, idx_atoms=%d",j,i);
+                    }
+                }
             }
+           
 
 
             float x_thread = x[idx];
@@ -150,10 +159,8 @@ namespace gpu {
 
             int cell_idx = compute_cell_index(x_thread,y_thread,z_thread);
 
-            int value_channel = 0;
-             for(int i = 0; i < 8; i++) {
-                value_channel = channel[i][idx];
-                if(value_channel == 1){
+             for(int i = 0; i < 8; i++) {    
+                if(channel[i][idx] == 1){
                     channel_thread = i;
                     break;
                 }
