@@ -349,12 +349,14 @@ namespace gpu {
 
         std::vector<float> result(result_size);
 
+        std::cout<<"before channel cpu []"<<std::endl;
+
         for(int i = 0; i < molecule_data.id.size();i++){
             for(int j = 0;j<8;j++){
                 std::cout<<"channel: "<<j<<", value:"<<molecule_data.channel[j][i]<<std::endl;
             }
         }
-
+std::cout<<"before conversion"<<std::endl;
         MoleculeDataGPU d_molecule_data = convert_molecule_to_SoA_gpu(molecule_data);
 
         float* d_result;
@@ -371,6 +373,8 @@ namespace gpu {
             d_molecule_data.charge,
             d_molecule_data.channel,
             d_grid_unique, d_result, num_atoms);
+
+            std::cout<<"after kernel channel soa"<<std::endl;
         
         // Synchronization
         cudaDeviceSynchronize();
