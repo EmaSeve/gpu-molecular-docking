@@ -1,5 +1,4 @@
 #include <cuda_runtime.h>  
-#include <iostream>
 #include "gpu_data_transfer.h"  
 #include "data_structures.h"
 #include "constants.h"
@@ -33,8 +32,6 @@ MoleculeDataGPU convert_molecule_to_SoA_gpu(const MoleculeData& host) {
 
     cudaMalloc(&device.channel, n_channel * sizeof(int*));
     cudaMemcpy(device.channel, temp_channel, n_channel * sizeof(int*), cudaMemcpyHostToDevice);
-
-    printf("\nCorrectly converted to SoA GPU\n");
 
     return device;
 }

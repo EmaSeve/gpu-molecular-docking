@@ -316,6 +316,8 @@ namespace gpu {
             d_molecule_data.z, 
             d_molecule_data.charge,
             d_grid_unique, d_result, num_atoms);
+
+        std::cout<<"general soa completed"<<std::endl;
         
         // Synchronization
         cudaDeviceSynchronize();
