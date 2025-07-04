@@ -135,7 +135,7 @@ namespace gpu {
             int* p = nullptr;
             int channel_thread = -1;
             
-                for(int i = 0; i<8;i++){
+               /*  for(int i = 0; i<8;i++){
                     p = channel[i];
                     printf("\n accessed pointer i=%d",i);
                 }
@@ -143,15 +143,22 @@ namespace gpu {
                 for(int i = 0; i<num_atoms;i++){
                     for(int j = 0;j<8;j++){
                         k = channel[j][i];
-                        /* if(i==idx && k==1){
+                         if(i==idx && k==1){
                             channel_thread = i;
                             printf("\n idx:%d, value:%d, channel:%d, atoms:%d",idx,k,j,i);
-                        } */
+                        } 
                         printf("value of k:%d",k);    
                             
                         printf("\n accessed channel i=%d, idx_atoms=%d",j,i);
                     }
-                }
+                } */
+
+            if(idx == 0){
+                k = channel[0][0];
+                printf("\nk_00:%d",k);
+            }
+
+
             
            
             float x_thread = x[idx];
