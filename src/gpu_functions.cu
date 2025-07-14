@@ -16,10 +16,11 @@ namespace gpu {
 
     static std::vector<cudaStream_t> streams;
 
-
     __constant__ GridConstants d_constants;
     
     float* d_grid_unique = nullptr;
+
+    static cudaTextureObject_t tex_grid = 0;
     
     // flag to trace initialization
     bool initialized = false;
@@ -154,6 +155,33 @@ namespace gpu {
             result[idx] = charge_thread * grid_unique[cell_idx * d_constants.n_channel + channel_thread];
 
         }
+
+     __global__ void compute_affinity_kernel_texture(const CudaMoleculeAtom* molecule_atoms, 
+        int num_atoms, cudaTextureObject_t tex_grid, float* result){
+        
+        extern __shared__ float shared_grid[];
+        
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
+        
+        if(idx >= num_atoms) return;
+        
+        float x = molecule_atoms[idx].x;
+        float y = molecule_atoms[idx].y;
+        float z = molecule_atoms[idx].z;
+        float charge = molecule_atoms[idx].charge;
+        
+        int cell_idx = compute_cell_index(x, y, z);
+        
+        for(int i = 0; i < d_constants.n_channel; i++){
+            shared_grid[threadIdx.x * d_constants.n_channel + i] = 
+                tex1D<float>(tex_grid, cell_idx * d_constants.n_channel + i);
+        }
+        
+        for(int i = 0; i < d_constants.n_channel; i++){
+            result[idx * d_constants.n_channel + i] = 
+                charge * shared_grid[threadIdx.x * d_constants.n_channel + i];
+        }
+    }
     
 // ----------------------------------------------------------------------------------------------------
 // ------------------------------------ Initalization -------------------------------------------------
@@ -204,6 +232,40 @@ namespace gpu {
         cudaMalloc(&d_grid_unique, size * sizeof(float));
         cudaMemcpy(d_grid_unique, cpu_grid_unique.data(), 
                    size * sizeof(float), cudaMemcpyHostToDevice);
+    }
+
+    void init_grid_texture(const std::vector<float>& cpu_grid_unique, int size){
+        init();
+
+        if (d_grid_unique != nullptr) {
+            cudaFree(d_grid_unique);
+        }
+        
+        cudaMalloc(&d_grid_unique, size * sizeof(float));
+        cudaMemcpy(d_grid_unique, cpu_grid_unique.data(), 
+                   size * sizeof(float), cudaMemcpyHostToDevice);
+
+        cudaResourceDesc resDesc;
+        memset(&resDesc, 0, sizeof(resDesc));
+        resDesc.resType = cudaResourceTypeLinear;
+        resDesc.res.linear.devPtr = d_grid_unique;
+        resDesc.res.linear.sizeInBytes = size * sizeof(float);
+        resDesc.res.linear.desc = cudaCreateChannelDesc<float>();
+        
+
+        cudaTextureDesc texDesc;
+        memset(&texDesc, 0, sizeof(texDesc));
+        texDesc.readMode = cudaReadModeElementType;
+        texDesc.filterMode = cudaFilterModePoint;      // No interpolazione
+        texDesc.addressMode[0] = cudaAddressModeClamp; // Clamp ai bordi
+        texDesc.normalizedCoords = 0;                  // Coordinate non normalizzate
+        
+    
+        cudaError_t err = cudaCreateTextureObject(&tex_grid, &resDesc, &texDesc, nullptr);
+        if (err != cudaSuccess) {
+            std::cerr << "Failed to create texture object: " << cudaGetErrorString(err) << std::endl;
+            return;
+        }
     }
 
 // ----------------------------------------------------------------------------------------------------
@@ -309,6 +371,53 @@ std::vector<float> compute_affinity_channel_AoS_async(const std::vector<Molecule
     return result;
 }
 
+std::vector<float> compute_affinity_texture_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id) {
+    if (!initialized || tex_grid == 0) {
+        std::cerr << "Error: CUDA texture environment not initialized!" << std::endl;
+        return {};
+    }
+    
+    if (stream_id >= streams.size()) {
+        std::cerr << "Error: Invalid stream ID " << stream_id << std::endl;
+        return {};
+    }
+    
+    cudaStream_t stream = streams[stream_id];
+    
+    int num_atoms = molecule_atoms.size();
+    int result_size = num_atoms * n_channel;
+    
+    std::vector<CudaMoleculeAtom> cuda_molecules = convert_molecule_to_AoS_gpu(molecule_atoms);
+    
+    CudaMoleculeAtom* d_molecules;
+    float* d_result;
+    
+    cudaMalloc(&d_molecules, num_atoms * sizeof(CudaMoleculeAtom));
+    cudaMalloc(&d_result, result_size * sizeof(float));
+    
+    cudaMemcpyAsync(d_molecules, cuda_molecules.data(), 
+                    num_atoms * sizeof(CudaMoleculeAtom),
+                    cudaMemcpyHostToDevice, stream);
+    
+    int block_size = 256;
+    int num_blocks = (num_atoms + block_size - 1) / block_size;
+    int shared_mem_size = n_channel * sizeof(float) * block_size;
+    
+    compute_affinity_kernel_texture<<<num_blocks, block_size, shared_mem_size, stream>>>(
+        d_molecules, num_atoms, tex_grid, d_result);
+    
+    std::vector<float> result(result_size);
+    
+    cudaMemcpyAsync(result.data(), d_result, result_size * sizeof(float), 
+                    cudaMemcpyDeviceToHost, stream);
+    
+    cudaStreamSynchronize(stream);
+    
+    cudaFree(d_molecules);
+    cudaFree(d_result);
+    
+    return result;
+}
 
 // ----------------------------------------------------------------------------------------------------
 // ------------------------------------ Array of Struct -------------------------------------------------
@@ -567,6 +676,10 @@ std::vector<float> compute_affinity_channel_AoS_async(const std::vector<Molecule
     }
 
     void cleanup() {
+        if (tex_grid != 0) {
+            cudaDestroyTextureObject(tex_grid);
+            tex_grid = 0;
+        }
         if (d_grid_unique != nullptr) {
             cudaFree(d_grid_unique);
             d_grid_unique = nullptr;

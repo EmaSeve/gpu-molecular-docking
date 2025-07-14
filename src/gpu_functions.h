@@ -8,6 +8,7 @@
 namespace gpu {
     // Funzioni di inizializzazione e cleanup
     void init_streams(int num_streams);
+    void init_grid_texture(const std::vector<float>& cpu_grid_unique, int size);
     void cleanup_streams();
     void synchronize_all_streams();
     void init();
@@ -18,6 +19,9 @@ namespace gpu {
     std::vector<float> compute_affinity_AoS_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id);
     std::vector<float> compute_affinity_channel_AoS_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id);
    
+    // texture mem + async
+    std::vector<float> compute_affinity_texture_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id);
+
     // Funzioni di calcolo dell'affinità - versione AoS
     std::vector<float> compute_affinity(const std::vector<MoleculeAtom>& molecule_atoms);
     std::vector<float> compute_affinity_channel(const std::vector<MoleculeAtom>& molecule_atoms);
@@ -29,6 +33,7 @@ namespace gpu {
     // Funzioni di benchmarking
     void evaluate_performance(const int type, const std::vector<MoleculeAtom>& molecule_atoms);
     void evaluate_performance_soa(const int type, const MoleculeData& molecule_data);
+
 }
 
 #endif

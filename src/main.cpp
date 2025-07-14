@@ -256,9 +256,44 @@ std::vector<float> dataset_gpu_processing(const std::vector<MoleculeAtom>& large
         gpu::cleanup_streams();
 
        } else if(type == 2){
+        std::cout << "\n --- TEXTURE general_affinity AoS ---\n";
+
+        gpu::init_streams(NUM_STREAMS);
+
+        std::vector<std::vector<MoleculeAtom>> batches;
+        std::vector<std::vector<float>> batch_results;
+
+        for(int i = 0; i < large_dataset.size(); i += BATCH_SIZE){
+            size_t current_batch_size = std::min(BATCH_SIZE, large_dataset.size() - i);
+
+            std::vector<MoleculeAtom> batch_molecules(
+                large_dataset.begin() + i, 
+                large_dataset.begin() + i + current_batch_size
+            );
+
+            batches.push_back(batch_molecules);
+            batch_results.resize(batches.size());
+        }
+
+        std::cout << "Created " << batches.size() << " batches" << std::endl;
+
+        for(int batch_idx = 0; batch_idx < batches.size(); batch_idx++){
+            int stream_id = batch_idx % NUM_STREAMS;
+
+            batch_results[batch_idx] = gpu::compute_affinity_texture_async(batches[batch_idx], stream_id);
+        }
+
+        std::cout << "Synchronizing all streams..." << std::endl;
+        gpu::synchronize_all_streams();
+    
+        for (const auto& batch_result : batch_results) {
+            final_results.insert(final_results.end(), batch_result.begin(), batch_result.end());
+        }
+    
+        gpu::cleanup_streams();
 
        } else if(type == 3){
-
+        // TODO
        }
 
     return final_results;
@@ -328,6 +363,7 @@ int main() {
     // Initialized Cuda enviroment
     gpu::init();
     gpu::init_grid(grid_unique, grid_size * n_channel);
+    gpu::init_grid_texture(grid_unique, grid_size * n_channel);
     
 /* // --- Array of Struct approach (for molecules) ---
 
