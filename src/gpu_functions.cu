@@ -14,6 +14,9 @@ extern int grid_size;
 // Variabili globali device
 namespace gpu {
 
+    static std::vector<cudaStream_t> streams;
+
+
     __constant__ GridConstants d_constants;
     
     float* d_grid_unique = nullptr;
@@ -155,6 +158,30 @@ namespace gpu {
 // ----------------------------------------------------------------------------------------------------
 // ------------------------------------ Initalization -------------------------------------------------
 // ----------------------------------------------------------------------------------------------------
+
+    void init_streams(int num_streams) {
+        streams.resize(num_streams);
+        for (int i = 0; i < num_streams; i++) {
+            cudaStreamCreate(&streams[i]);
+        }
+        std::cout << "Initialized " << num_streams << " CUDA streams" << std::endl;
+    }
+    
+    void cleanup_streams() {
+        for (auto& stream : streams) {
+            cudaStreamDestroy(stream);
+        }
+        streams.clear();
+        std::cout << "Cleaned up CUDA streams" << std::endl;
+    }
+    
+    void synchronize_all_streams() {
+        for (auto& stream : streams) {
+            cudaStreamSynchronize(stream);
+        }
+        std::cout << "All streams synchronized" << std::endl;
+    }
+
     void init() {
         if (initialized) return;
         
@@ -178,6 +205,111 @@ namespace gpu {
         cudaMemcpy(d_grid_unique, cpu_grid_unique.data(), 
                    size * sizeof(float), cudaMemcpyHostToDevice);
     }
+
+// ----------------------------------------------------------------------------------------------------
+// ------------------------------------ Large Dataset -------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
+
+std::vector<float> compute_affinity_AoS_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id){
+    
+    if (!initialized || d_grid_unique == nullptr) {
+            std::cerr << "Error: CUDA environment not initialized!" << std::endl;
+            return {};
+        }
+    
+    if (stream_id >= streams.size()) {
+            std::cerr << "Error: Invalid stream ID " << stream_id << std::endl;
+            return {};
+    }
+
+    cudaStream_t stream = streams[stream_id];
+
+    int num_atoms = molecule_atoms.size();
+    int result_size = num_atoms * n_channel;
+    
+
+    std::vector<CudaMoleculeAtom> cuda_molecules = convert_molecule_to_AoS_gpu(molecule_atoms);
+
+    CudaMoleculeAtom* d_molecules;
+    float* d_result;
+
+    cudaMalloc(&d_molecules, num_atoms * sizeof(CudaMoleculeAtom));
+    cudaMalloc(&d_result, result_size * sizeof(float));
+
+
+    cudaMemcpyAsync(d_molecules, cuda_molecules.data(), num_atoms * sizeof(CudaMoleculeAtom),
+                    cudaMemcpyHostToDevice, stream); 
+
+    int block_size = 256;
+    int num_blocks = (num_atoms + block_size - 1) / block_size;
+    int shared_mem_size = n_channel * sizeof(float) * block_size;
+
+    compute_affinity_kernel<<<num_blocks, block_size, shared_mem_size, stream>>>(
+            d_molecules, num_atoms, d_grid_unique, d_result);
+
+                
+    std::vector<float> result(result_size);
+
+    cudaMemcpyAsync(result.data(), d_result, result_size * sizeof(float), 
+                    cudaMemcpyDeviceToHost, stream);
+
+    cudaStreamSynchronize(stream);
+
+    cudaFree(d_molecules);
+    cudaFree(d_result);
+        
+    return result;
+}
+
+std::vector<float> compute_affinity_channel_AoS_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id){
+    if (!initialized || d_grid_unique == nullptr) {
+            std::cerr << "Error: CUDA environment not initialized!" << std::endl;
+            return {};
+        }
+    
+    if (stream_id >= streams.size()) {
+            std::cerr << "Error: Invalid stream ID " << stream_id << std::endl;
+            return {};
+    }
+
+    cudaStream_t stream = streams[stream_id];
+
+    int num_atoms = molecule_atoms.size();
+    int result_size = num_atoms;
+
+    std::vector<CudaMoleculeAtom> cuda_molecules = convert_molecule_to_AoS_gpu(molecule_atoms);
+
+    CudaMoleculeAtom* d_molecules;
+    float* d_result;
+
+    cudaMalloc(&d_molecules, num_atoms * sizeof(CudaMoleculeAtom));
+    cudaMalloc(&d_result, result_size * sizeof(float));
+
+    cudaMemcpyAsync(d_molecules, cuda_molecules.data(), num_atoms * sizeof(CudaMoleculeAtom),
+                    cudaMemcpyHostToDevice, stream); 
+
+    int block_size = 256;
+    int num_blocks = (num_atoms + block_size - 1) / block_size;
+    // doesn't need the shared memory, since every cell of the grid is accessed once,
+    // instead of eight times as in the general affinity function
+
+    compute_affinity_channel_kernel<<<num_blocks, block_size,0,stream>>>(
+            d_molecules, num_atoms, d_grid_unique, d_result);
+
+    std::vector<float> result(result_size);
+
+    cudaMemcpyAsync(result.data(), d_result, result_size * sizeof(float), 
+                    cudaMemcpyDeviceToHost, stream);
+
+    cudaStreamSynchronize(stream);
+
+    cudaFree(d_molecules);
+    cudaFree(d_result);
+        
+    return result;
+}
+
+
 // ----------------------------------------------------------------------------------------------------
 // ------------------------------------ Array of Struct -------------------------------------------------
 // ----------------------------------------------------------------------------------------------------

@@ -9,6 +9,8 @@
 #include <chrono>
 #include <random>
 
+#include <future>
+#include <thread>
 
 #include "data_structures.h"
 #include "parser.h"
@@ -166,6 +168,146 @@ void valutate_performance_cpu(const int type, const std::vector<MoleculeAtom> &m
               " affinity: " << average_time << std::endl;
 }
 
+
+std::vector<float> dataset_gpu_processing(const std::vector<MoleculeAtom>& large_dataset, const int type){
+    
+    const int NUM_STREAMS = 2;
+    const size_t BATCH_SIZE = dataset_size / NUM_STREAMS;
+    const int different_approach = 4;
+
+    std::vector<float> final_results;
+
+    std::cout << "\n===== DATASET GPU PROCESSING =====\n";
+    std::cout << "Using: Batch processing + Async transfers \n";
+    std::cout << "Batch size: " << BATCH_SIZE << ", Streams: " << NUM_STREAMS << std::endl;
+
+       if(type == 0){
+        std::cout << "\n --- general_affinity AoS ---\n";
+
+        gpu::init_streams(NUM_STREAMS);
+
+        std::vector<std::vector<MoleculeAtom>> batches;
+        std::vector<std::vector<float>> batch_results;
+
+        for(int i = 0; i < large_dataset.size(); i += BATCH_SIZE){
+            size_t current_batch_size = std::min(BATCH_SIZE, large_dataset.size() - i);
+
+            std::vector<MoleculeAtom> batch_molecules(
+                large_dataset.begin() + i, 
+                large_dataset.begin() + i + current_batch_size
+            );
+
+            batches.push_back(batch_molecules);
+            batch_results.resize(batches.size());
+        }
+
+        std::cout << "Created " << batches.size() << " batches" << std::endl;
+
+        for(int batch_idx = 0; batch_idx < batches.size(); batch_idx++){
+            int stream_id = batch_idx % NUM_STREAMS;
+
+            batch_results[batch_idx] = gpu::compute_affinity_AoS_async(batches[batch_idx], stream_id);
+        }
+
+        std::cout << "Synchronizing all streams..." << std::endl;
+        gpu::synchronize_all_streams();
+    
+        for (const auto& batch_result : batch_results) {
+            final_results.insert(final_results.end(), batch_result.begin(), batch_result.end());
+        }
+    
+        gpu::cleanup_streams();
+
+       } else if(type == 1){
+        std::cout << "\n --- channel_affinity AoS ---\n";
+
+        gpu::init_streams(NUM_STREAMS);
+
+        std::vector<std::vector<MoleculeAtom>> batches;
+        std::vector<std::vector<float>> batch_results;
+
+        for(int i = 0; i < large_dataset.size(); i += BATCH_SIZE){
+            size_t current_batch_size = std::min(BATCH_SIZE, large_dataset.size() - i);
+
+            std::vector<MoleculeAtom> batch_molecules(
+                large_dataset.begin() + i, 
+                large_dataset.begin() + i + current_batch_size
+            );
+
+            batches.push_back(batch_molecules);
+            batch_results.resize(batches.size());
+        }
+
+        std::cout << "Created " << batches.size() << " batches" << std::endl;
+
+        for(int batch_idx = 0; batch_idx < batches.size(); batch_idx++){
+            int stream_id = batch_idx % NUM_STREAMS;
+
+            batch_results[batch_idx] = gpu::compute_affinity_channel_AoS_async(batches[batch_idx], stream_id);
+        }
+
+        std::cout << "Synchronizing all streams..." << std::endl;
+        gpu::synchronize_all_streams();
+    
+        for (const auto& batch_result : batch_results) {
+            final_results.insert(final_results.end(), batch_result.begin(), batch_result.end());
+        }
+    
+        gpu::cleanup_streams();
+
+       } else if(type == 2){
+
+       } else if(type == 3){
+
+       }
+
+    return final_results;
+}
+
+void benchmark_batch_sizes(const std::vector<MoleculeAtom>& large_dataset) {
+    std::vector<size_t> batch_sizes = {10000, 25000, 50000, 100000};
+    std::vector<int> stream_counts = {1, 2, 4, 8};
+    
+    std::cout << "\n===== BATCH SIZE BENCHMARK =====\n";
+    std::cout << "Batch Size\tStreams\tTotal Time\tThroughput\n";
+    
+    for (auto batch_size : batch_sizes) {
+        for (auto num_streams : stream_counts) {
+            if (batch_size * num_streams > large_dataset.size()) continue;
+            
+            auto start = std::chrono::high_resolution_clock::now();
+            
+            // Simula processing con questi parametri
+            gpu::init_streams(num_streams);
+            
+            size_t processed = 0;
+            for (size_t i = 0; i < large_dataset.size(); i += batch_size) {
+                size_t current_batch = std::min(batch_size, large_dataset.size() - i);
+                
+                std::vector<MoleculeAtom> batch(
+                    large_dataset.begin() + i,
+                    large_dataset.begin() + i + current_batch
+                );
+                
+                int stream_id = (i / batch_size) % num_streams;
+                auto result = gpu::compute_affinity_AoS_async(batch, stream_id);
+                processed += current_batch;
+            }
+            
+            gpu::synchronize_all_streams();
+            gpu::cleanup_streams();
+            
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            
+            double throughput = (double)processed / duration.count();  // atomi/μs
+            
+            std::cout << batch_size << "\t\t" << num_streams << "\t" 
+                      << duration.count() << "μs\t" << throughput << "\n";
+        }
+    }
+}
+
 int main() {
     std::string filepath_protein = "../data/pocket.geneo.csv";
     std::string filepath_molecule = "../data/6ugn_ligand.mol2.csv";
@@ -187,7 +329,7 @@ int main() {
     gpu::init();
     gpu::init_grid(grid_unique, grid_size * n_channel);
     
-// --- Array of Struct approach (for molecules) ---
+/* // --- Array of Struct approach (for molecules) ---
 
     std::cout << "\n--- AoS Approach ---\n";
     std::vector<float> result_gpu[4];
@@ -207,33 +349,41 @@ int main() {
     result_gpu[3] = gpu::compute_affinity_channel_soa(molecule_data);
     
     gpu::evaluate_performance_soa(1, molecule_data);// all channel
-    gpu::evaluate_performance_soa(2, molecule_data); 
+    gpu::evaluate_performance_soa(2, molecule_data);
+ */
+// --- Large dataset of Molecule --- 
 
-    std::cout<<"\nCheck general result:\n"<<std::endl;
-    for(int i = 0; i<result[0].size();i++){
-        if(result[0][i] != result_gpu[0][i])
-            std::cout<<"\nerror general AoS\n"<<std::endl;
-        if(result[0][i] != result_gpu[2][i])
-            std::cout<<"\nerror general SoA\n"<<std::endl;
+    std::vector<MoleculeAtom> large_dataset;
+
+    // duplicating the same molecule
+    for(int i = 0; i < dataset_size; i++){
+        for(auto atom : molecule_atoms){
+            MoleculeAtom new_atom = atom;
+            large_dataset.push_back(new_atom);
+        }
     }
 
-    for(int i = 0; i < result[1].size();i++){
-        if(result[1][i] != result_gpu[1][i])
-            std::cout<<"\nerror channel AoS\n"<<std::endl;
-        if(result[1][i] != result_gpu[3][i])
-            std::cout<<"\nerror channel SoA\n"<<std::endl;
-    } 
+    std::cout << "Generated " << large_dataset.size() << " atoms in large dataset" << std::endl;
+    
+    for(int i = 0; i < 4; i++){
+        auto start_time = std::chrono::high_resolution_clock::now();
+        auto large_results = dataset_gpu_processing(large_dataset, i); // Gpu function call
+        auto end_time = std::chrono::high_resolution_clock::now();
+        
+        auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        std::cout << "Large dataset processing completed in " << total_time.count() << " ms" << std::endl;
+        std::cout << "Results: " << large_results.size() << " values" << std::endl;
+    }
+
+ 
+
+  // benchmark_batch_sizes(large_dataset);
+
     
     gpu::cleanup();
-
+    
     return 0;
 }
-
-
-
-
-
-
 
 
 
