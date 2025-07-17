@@ -19,6 +19,8 @@ namespace gpu {
     std::vector<float> compute_affinity_AoS_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id);
     std::vector<float> compute_affinity_channel_AoS_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id);
    
+    std::vector<float> compute_affinity_SoA_async(const MoleculeData& molecule_data, int stream_id);
+   
     // texture mem + async
     std::vector<float> compute_affinity_texture_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id);
 

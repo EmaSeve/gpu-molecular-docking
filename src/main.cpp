@@ -293,7 +293,45 @@ std::vector<float> dataset_gpu_processing(const std::vector<MoleculeAtom>& large
         gpu::cleanup_streams();
 
        } else if(type == 3){
-        // TODO
+        std::cout << "\n --- general_affinity SoA ---\n";
+
+        gpu::init_streams(NUM_STREAMS);
+
+        std::vector<std::vector<MoleculeAtom>> batches;
+        std::vector<std::vector<float>> batch_results;
+
+        for(int i = 0; i < large_dataset.size(); i += BATCH_SIZE){
+            size_t current_batch_size = std::min(BATCH_SIZE, large_dataset.size() - i);
+
+            std::vector<MoleculeAtom> batch_molecules(
+                large_dataset.begin() + i, 
+                large_dataset.begin() + i + current_batch_size
+            );
+
+            batches.push_back(batch_molecules);
+            batch_results.resize(batches.size());
+        }
+
+        std::cout << "Created " << batches.size() << " batches" << std::endl;
+
+        MoleculeData batch_molecule_data;
+
+        for(int batch_idx = 0; batch_idx < batches.size(); batch_idx++){
+            int stream_id = batch_idx % NUM_STREAMS;
+
+            batch_molecule_data = convert_molecule_to_SoA(batches[batch_idx]);
+            batch_results[batch_idx] = gpu::compute_affinity_SoA_async(batch_molecule_data, stream_id);
+        }
+
+        std::cout << "Synchronizing all streams..." << std::endl;
+        gpu::synchronize_all_streams();
+    
+        for (const auto& batch_result : batch_results) {
+            final_results.insert(final_results.end(), batch_result.begin(), batch_result.end());
+        }
+    
+        gpu::cleanup_streams();
+ 
        }
 
     return final_results;

@@ -371,6 +371,62 @@ std::vector<float> compute_affinity_channel_AoS_async(const std::vector<Molecule
     return result;
 }
 
+std::vector<float> compute_affinity_SoA_async(const MoleculeData& molecule_data, int stream_id){
+     if (!initialized || tex_grid == 0) {
+        std::cerr << "Error: CUDA texture environment not initialized!" << std::endl;
+        return {};
+    }
+    
+    if (stream_id >= streams.size()) {
+        std::cerr << "Error: Invalid stream ID " << stream_id << std::endl;
+        return {};
+    }
+
+    cudaStream_t stream = streams[stream_id];
+
+    int num_atoms = molecule_data.id.size();
+    int result_size = num_atoms * n_channel;
+
+    std::vector<float> result(result_size);
+
+    MoleculeDataGPU d_molecule_data = convert_molecule_to_SoA_gpu_async(molecule_data, stream);
+
+    float* d_result;
+    cudaMalloc(&d_result, result_size * sizeof(float));
+
+        // launch kernel
+        int block_size = 256;
+        int num_blocks = (num_atoms + block_size - 1) / block_size;
+        int shared_mem_size = block_size * n_channel * sizeof(float);
+
+        compute_affinity_kernel_soa<<<num_blocks, block_size, shared_mem_size, stream>>>(
+            d_molecule_data.id, 
+            d_molecule_data.x, 
+            d_molecule_data.y, 
+            d_molecule_data.z, 
+            d_molecule_data.charge,
+            d_grid_unique, d_result, num_atoms);
+
+
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+           std::cerr << "CUDA kernel failed: " << cudaGetErrorString(err) << std::endl;
+        }
+
+        // copy from device to host
+        cudaMemcpyAsync(result.data(), d_result, result_size * sizeof(float), cudaMemcpyDeviceToHost, stream);
+
+        cudaStreamSynchronize(stream);
+
+        // free gpu memory
+        free_molecule_gpu_async(d_molecule_data, stream);
+        cudaFree(d_result);
+        
+        return result;
+
+
+}
+
 std::vector<float> compute_affinity_texture_async(const std::vector<MoleculeAtom>& molecule_atoms, int stream_id) {
     if (!initialized || tex_grid == 0) {
         std::cerr << "Error: CUDA texture environment not initialized!" << std::endl;

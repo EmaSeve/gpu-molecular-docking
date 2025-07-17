@@ -7,6 +7,9 @@ namespace gpu {
     // Funzioni di allocazione e trasferimento memoria per SoA
     MoleculeDataGPU convert_molecule_to_SoA_gpu(const MoleculeData& host);
     void free_molecule_gpu(MoleculeDataGPU& device);
+
+    MoleculeDataGPU convert_molecule_to_SoA_gpu_async(const MoleculeData& host, cudaStream_t stream);
+    void free_molecule_gpu_async(MoleculeDataGPU& device, cudaStream_t stream);
 }
 
 #endif // GPU_DATA_TRANSFER_H
