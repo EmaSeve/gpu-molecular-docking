@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <chrono>
-#include "data_structures.h"
+#include "../common/data_structures.h"
 
 namespace gpu {
     // Funzioni di inizializzazione e cleanup

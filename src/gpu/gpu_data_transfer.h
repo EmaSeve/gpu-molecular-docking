@@ -1,7 +1,7 @@
 #ifndef GPU_DATA_TRANSFER_H
 #define GPU_DATA_TRANSFER_H
 
-#include "data_structures.h"
+#include "../common/data_structures.h"
 
 namespace gpu {
     // Funzioni di allocazione e trasferimento memoria per SoA

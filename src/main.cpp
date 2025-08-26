@@ -171,7 +171,7 @@ void valutate_performance_cpu(const int type, const std::vector<MoleculeAtom> &m
 
 std::vector<float> dataset_gpu_processing(const std::vector<MoleculeAtom>& large_dataset, const int type){
     
-    const int NUM_STREAMS = 2;
+    const int NUM_STREAMS = 4;
     const size_t BATCH_SIZE = dataset_size / NUM_STREAMS;
     const int different_approach = 4;
 
@@ -451,7 +451,7 @@ int main() {
 
  
 
-  // benchmark_batch_sizes(large_dataset);
+//    benchmark_batch_sizes(large_dataset);
 
     
     gpu::cleanup();

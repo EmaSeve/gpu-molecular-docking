@@ -63,28 +63,28 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 # headers
 set(header_path "${CMAKE_CURRENT_SOURCE_DIR}/src")
 list(APPEND header_files
-  "${header_path}/constants.h"
-  "${header_path}/data_structures.h"
-  "${header_path}/gpu_data_transfer.h"
-  "${header_path}/gpu_functions.h"
-  "${header_path}/parser.h"
-  "${header_path}/random.h"
+  "${header_path}/common/constants.h"
+  "${header_path}/common/data_structures.h"
+  "${header_path}/cpu/parser.h"
+  "${header_path}/cpu/random.h"
+  "${header_path}/gpu/gpu_data_transfer.h"
+  "${header_path}/gpu/gpu_functions.h"
 )
 
 # sources (C++ files)
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}/src")
 list(APPEND source_files
   "${source_path}/main.cpp"
-  "${source_path}/constants.cpp"
-  "${source_path}/data_structures.cpp"
-  "${source_path}/parser.cpp"
-  "${source_path}/random.cpp"
+  "${source_path}/common/constants.cpp"
+  "${source_path}/common/data_structures.cpp"
+  "${source_path}/cpu/parser.cpp"
+  "${source_path}/cpu/random.cpp"
 )
 
 # CUDA sources
 list(APPEND cuda_source_files
-  "${source_path}/gpu_data_transfer.cu"
-  "${source_path}/gpu_functions.cu"
+  "${source_path}/gpu/gpu_data_transfer.cu"
+  "${source_path}/gpu/gpu_functions.cu"
 )
 
 #########################################################################
@@ -93,7 +93,12 @@ list(APPEND cuda_source_files
 
 # declare the application executable
 add_executable(main ${header_files} ${source_files} ${cuda_source_files})
-target_include_directories(main PRIVATE "${header_path}")
+target_include_directories(main PRIVATE 
+    "${header_path}"
+    "${header_path}/common"
+    "${header_path}/cpu"
+    "${header_path}/gpu"
+)
 set_target_properties(main
     PROPERTIES
       CXX_STANDARD 17

@@ -1,10 +1,10 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <chrono>
-#include "data_structures.h"
+#include "../common/data_structures.h"
 #include "gpu_functions.h"
 #include "gpu_data_transfer.h"
-#include "constants.h"
+#include "../common/constants.h"
 
 // Riferimenti alle variabili globali da main.cpp
 extern int X, Y, Z;
@@ -284,7 +284,7 @@ std::vector<float> compute_affinity_AoS_async(const std::vector<MoleculeAtom>& m
             return {};
     }
 
-    cudaStream_t stream = streams[stream_id];
+    cudaStream_t& stream = streams[stream_id];
 
     int num_atoms = molecule_atoms.size();
     int result_size = num_atoms * n_channel;
@@ -334,7 +334,7 @@ std::vector<float> compute_affinity_channel_AoS_async(const std::vector<Molecule
             return {};
     }
 
-    cudaStream_t stream = streams[stream_id];
+    cudaStream_t& stream = streams[stream_id];
 
     int num_atoms = molecule_atoms.size();
     int result_size = num_atoms;
@@ -382,7 +382,7 @@ std::vector<float> compute_affinity_SoA_async(const MoleculeData& molecule_data,
         return {};
     }
 
-    cudaStream_t stream = streams[stream_id];
+    cudaStream_t& stream = streams[stream_id];
 
     int num_atoms = molecule_data.id.size();
     int result_size = num_atoms * n_channel;
@@ -438,7 +438,7 @@ std::vector<float> compute_affinity_texture_async(const std::vector<MoleculeAtom
         return {};
     }
     
-    cudaStream_t stream = streams[stream_id];
+    cudaStream_t& stream = streams[stream_id];
     
     int num_atoms = molecule_atoms.size();
     int result_size = num_atoms * n_channel;

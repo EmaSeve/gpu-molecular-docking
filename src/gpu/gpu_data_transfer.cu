@@ -1,7 +1,7 @@
 #include <cuda_runtime.h>  
 #include "gpu_data_transfer.h"  
-#include "data_structures.h"
-#include "constants.h"
+#include "../common/data_structures.h"
+#include "../common/constants.h"
 
 
 namespace gpu{
