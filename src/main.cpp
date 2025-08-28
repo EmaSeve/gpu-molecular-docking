@@ -12,10 +12,10 @@
 #include <future>
 #include <thread>
 
-#include "data_structures.h"
-#include "parser.h"
-#include "gpu_functions.h"
-#include "constants.h"
+#include "common/data_structures.h"
+#include "cpu/parser.h"
+#include "gpu/gpu_functions.h"
+#include "common/constants.h"
 
 int X,Y,Z;
 
